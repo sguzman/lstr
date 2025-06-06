@@ -80,6 +80,59 @@ lstr [OPTIONS] [PATH]
 -   `-V, --version`
     -   Show the version information.
 
+## Examples
+
+Here are a few common ways to use `lstr`.
+
+**1. List the contents of the current directory**
+This is the default behavior. `lstr` will run in parallel with auto-detected color.
+
+```bash
+lstr
+```
+
+**2. Display a directory two levels deep**
+Use the `-L` flag to control recursion depth. This is useful for getting a quick overview without too much detail.
+
+```bash
+lstr -L 2 ~/Documents
+```
+
+**3. Show only the directory structure**
+Hide all files and focus on the layout of your directories.
+
+```bash
+lstr -d
+```
+
+**4. Find all Markdown files in a project**
+Disable color for clean output that can be piped to other tools like `grep`.
+
+```bash
+lstr --color never | grep "\.md$"
+```
+
+**5. See everything, including hidden files**
+The `-a` flag will show dotfiles like `.git`, `.gitignore`, and `.vscode`.
+
+```bash
+lstr -a
+```
+
+**6. Run in single-threaded (serial) mode**
+This fulfills the user's request. This disables the default parallel behavior, which can be useful for debugging, consistent benchmarking, or on systems with very few cores.
+
+```bash
+lstr --serial
+```
+
+**7. Combine flags for a power-user view**
+Show all files (`-a`) up to a depth of 2 (`-L 2`) in your project, forcing color on.
+
+```bash
+lstr -a -L 2
+```
+
 ## Future Improvements
 
 `lstr` is a living project. Future enhancements could include:
