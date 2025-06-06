@@ -1,0 +1,11 @@
+[package]
+name = "lstr"
+version = "0.1.0" # Bump the version
+edition = "2021"
+description = "A blazingly fast, minimalist directory tree viewer"
+license = "MIT"
+readme = "README.md"
+
+[dependencies]
+clap = { version = "4.5.7", features = ["derive"] }
+colored = "2.1.0"
