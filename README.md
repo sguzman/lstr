@@ -16,10 +16,12 @@ A blazingly fast, minimalist directory tree viewer, written in Rust.
 ## Features
 
 -   Recursive directory listing with a visual tree structure.
+-   Parallel directory traversal enabled by default for high performance.
 -   Configurable colorized output for easy identification (`--color`).
 -   Control listing depth (`-L`).
 -   Option to list directories only (`-d`).
 -   Support for showing hidden files (`-a`).
+-   Option to run in single-threaded (serial) mode (`--serial`).
 
 ### Color Output
 
@@ -36,15 +38,15 @@ You need the Rust toolchain installed on your system to build `lstr`.
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/lstr.git](https://github.com/bgreenwell/lstr.git)
+    git clone [https://github.com/your-username/lstr.git](https://github.com/your-username/lstr.git)
     cd lstr
     ```
 
 2.  **Build and install using Cargo:**
     ```bash
+    # This compiles in release mode and copies the binary to ~/.cargo/bin
     cargo install --path .
     ```
-    This will compile `lstr` and place the binary in your Cargo binary path (`~/.cargo/bin`), making it available from anywhere in your terminal.
 
 ## Usage
 
@@ -58,6 +60,9 @@ lstr [OPTIONS] [PATH]
     -   The directory path to list. Defaults to the current directory (`.`).
 
 ### **Options:**
+
+-   `--serial`
+    -   Run in single-threaded (serial) mode. Parallelism is enabled by default to maximize speed.
 
 -   `--color <WHEN>`
     -   Specify when to use color output.
