@@ -90,4 +90,4 @@ lstr [OPTIONS] [PATH]
 
 ## Inspiration
 
-The philosophy and functionality of `lstr` are heavily inspired by the excellent C-based `tree` project from [Old-Man-Programmer](https://github.com/Old-Man-Programmer/tree). This project is an attempt to recreate that classic utility in modern, safe Rust. (It's also an excuse to learn rust!)
+The philosophy and functionality of `lstr` are heavily inspired by the excellent C-based [tree](https://github.com/Old-Man-Programmer/tree) project. This project is an attempt to recreate that classic utility in modern, safe Rust. (It's also an excuse to learn rust!)
