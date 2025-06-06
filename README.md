@@ -87,3 +87,7 @@ lstr [OPTIONS] [PATH]
 -   File size display (`-s` flag).
 -   Permissions and metadata display.
 -   Optimized parallel directory traversal for massive directories.
+
+## Inspiration
+
+The philosophy and functionality of `lstr` are heavily inspired by the excellent C-based `tree` project from [Old-Man-Programmer](https://github.com/Old-Man-Programmer/tree). This project is an attempt to recreate that classic utility in modern, safe Rust. (It's also an excuse to learn rust!)
