@@ -60,3 +60,12 @@ ehthumbs_vista.db
 # Ignore local environment variables, which may contain sensitive data.
 .env
 .env.local
+
+
+# =============================================================================
+# Miscellaneous Files
+# =============================================================================
+
+# Ignore temporary files created by various tools.
+README.html
+/README_files/

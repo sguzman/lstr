@@ -4,7 +4,7 @@ A blazingly fast, minimalist directory tree viewer, written in Rust.
 
 `lstr` (`LiSt-TRree`) walks a directory and prints its contents in a tree structure. It is designed with the Unix philosophy in mind: do one thing and do it well, with a focus on speed and simplicity.
 
-![lstr screenshot]() 
+![lstr screenshot](screenshot.png) 
 *(Note: You will need to replace this with an actual screenshot URL after you run it)*
 
 ## Philosophy
