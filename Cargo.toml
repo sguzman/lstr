@@ -1,6 +1,6 @@
 [package]
 name = "lstr"
-version = "0.1.0" # Bump the version
+version = "0.1.1" # Bump the version
 edition = "2021"
 description = "A blazingly fast, minimalist directory tree viewer"
 license = "MIT"
