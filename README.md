@@ -146,6 +146,23 @@ lstr -a -L 2
 -   Permissions and metadata display.
 -   Optimized parallel directory traversal for massive directories.
 
+## Benchmarking
+
+This project uses [hyperfine](https://github.com/sharkdp/hyperfine) for benchmarking:
+```bash
+hyperfine --warmup 1 --prepare 'sudo purge' --show-output 'lstr ~/Dropbox' 'lstr --serial ~/Dropbox' 'tree ~/Dropbox'
+```
+```
+2288 directories, 13906 files
+  Time (mean ± σ):     224.6 ms ±  55.0 ms    [User: 48.6 ms, System: 88.2 ms]
+  Range (min … max):   162.8 ms … 316.0 ms    10 runs
+
+Summary
+  lstr ~/Dropbox ran
+    1.26 ± 0.46 times faster than lstr --serial ~/Dropbox
+    1.45 ± 0.46 times faster than tree ~/Dropbox
+```
+
 ## Inspiration
 
 The philosophy and functionality of `lstr` are heavily inspired by the excellent C-based [tree](https://github.com/Old-Man-Programmer/tree) project. This project is an attempt to recreate that classic utility in modern, safe Rust. (It's also an excuse to learn rust!)
