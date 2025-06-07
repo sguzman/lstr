@@ -1,8 +1,8 @@
 use clap::{Parser, ValueEnum};
 use std::fmt;
-use std::path::{PathBuf};
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
-use colored::{control, Colorize};
+use colored::{control, Colorize, Color};
 use ignore::{WalkBuilder, WalkState};
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
@@ -13,6 +13,7 @@ impl fmt::Display for ColorChoice {
         self.to_possible_value().expect("no values are skipped").get_name().fmt(f)
     }
 }
+
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -27,12 +28,114 @@ struct Args {
     dirs_only: bool,
     #[arg(short = 'a', long, help = "Show all files, including hidden ones")]
     all: bool,
-    #[arg(short = 'g', long, help = "Respect .gitignore files (enabled by default)")]
+    #[arg(short = 'g', long, help = "Respect .gitignore and other standard ignore files")]
     gitignore: bool,
+    #[arg(long, help = "Display file-specific icons (requires a Nerd Font)")]
+    icons: bool,
+}
+
+/// Returns a Nerd Font icon and a color for a given path.
+fn get_icon_for_path(path: &Path, is_dir: bool) -> (String, Color) {
+    if is_dir {
+        return ("".to_string(), Color::Blue);  // Folder icon
+    }
+
+    let icon = match path.file_name().and_then(|s| s.to_str()) {
+        //Some("Cargo.toml") | Some("Cargo.lock") => "",
+        Some("Cargo.toml") => "",
+        Some("Cargo.lock") => "",
+        Some(".gitignore") | Some(".gitattributes") => "",
+        Some("LICENSE") => "",
+        Some("README.md") => "",
+        Some("Dockerfile") => "",
+        Some("Makefile") | Some("makefile") => "",
+        Some("CMakeLists.txt") => "",
+        _ => {
+            // Fall back to matching file extensions if no special filename matches
+            match path.extension().and_then(|s| s.to_str()) {
+                // Documents and text
+                Some("md") => "",
+                Some("txt") => "",
+                Some("pdf") => "",
+
+                // Programming and scripting languages
+                Some("rs") => "",      // Rust
+                Some("r") | Some("R") => "", // R
+                Some("py") => "",      // Python
+                Some("js") => "",      // JavaScript
+                Some("ts") | Some("tsx") => "",      // TypeScript
+                Some("java") => "",      // Java
+                Some("kt") | Some("kts") => "",      // Kotlin
+                Some("swift") => "",   // Swift
+                Some("go") => "",      // Go
+                Some("php") => "",      // PHP
+                Some("rb") => "",      // Ruby
+                Some("c") | Some("h") => "",      // C
+                Some("cpp") | Some("hpp") | Some("cc") | Some("hh") => "", // C++
+                Some("cs") => "󰌛",      // C#
+                Some("sh") | Some("bash") | Some("zsh") => "",      // Shell
+                Some("asm") | Some("s") => "",      // Assembly
+                Some("wasm") => "",     // WebAssembly
+
+                // Web
+                Some("html") => "",
+                Some("css") | Some("scss") => "",
+                Some("svg") => "󰜡", // SVG icon
+
+                // Config, data, and lock files
+                Some("toml") => "",
+                Some("json") => "",
+                Some("yaml") | Some("yml") => "󰗊",
+                Some("xml") => "󰗀",
+                Some("env") => "",
+                Some("sql") | Some("db") | Some("sqlite3") => "",
+                Some("csv") => "",
+                Some("lock") => "", // Generic lock file
+                Some("gradle") => "", // Gradle/Android
+                Some("tf") => "", // Terraform
+
+                // Archives
+                Some("zip") | Some("gz") | Some("tar") | Some("rar") => "",
+                
+                // Media and fonts
+                Some("png") | Some("jpg") | Some("jpeg") | Some("gif") => "",
+                Some("mp3") | Some("flac") | Some("wav") => "",
+                Some("mp4") | Some("mov") | Some("mkv") => "",
+                Some("ttf") | Some("otf") | Some("woff") | Some("woff2") => "",
+                
+                _ => "", // Default file icon
+            }
+        }
+    };
+
+    // Determine color based on the icon
+    let color = match icon {
+        // Languages
+        "" | "" => Color::Red,          // Rust, Java
+        "" | "" | "" | "" | "" | "" => Color::Blue,  // R, C, C++, TS, Docker, Terraform
+        "" | "" => Color::Yellow,       // Python, JS
+        "" | "" | "" => Color::BrightRed, // Swift, PHP, Ruby
+        "" | "" => Color::Green,        // Go, Shell
+        "󰌛" | "" => Color::Magenta,    // C#, Kotlin
+
+        // Config and data
+        "" | "󰗊" | "" => Color::BrightYellow,
+        "" => Color::Yellow,
+        "" | "" => Color::Cyan,
+
+        // Other
+        "" => Color::BrightBlack,  // Git
+        "" | "" | "" => Color::Magenta,      // Media
+        "" => Color::BrightRed,    // Archives
+        _ => Color::White,          // Default color for other icons
+    };
+
+    (icon.to_string(), color)
 }
 
 fn main() {
     let args = Args::parse();
+
     match args.color {
         ColorChoice::Always => control::set_override(true),
         ColorChoice::Never => control::set_override(false),
@@ -46,20 +149,16 @@ fn main() {
     
     println!("{}", args.path.display().to_string().blue());
 
-    // --- Configure the WalkBuilder ---
     let mut builder = WalkBuilder::new(&args.path);
     builder
-        .hidden(!args.all) // `hidden(true)` is the default, so we invert the logic
+        .hidden(!args.all)
         .git_ignore(args.gitignore)
         .max_depth(args.level);
 
     let walker = builder.build_parallel();
-
-    // Use Atomic counters for safe parallel counting
     let dir_count = AtomicU32::new(0);
     let file_count = AtomicU32::new(0);
 
-    // --- Let the `ignore` crate do all the work ---
     walker.run(|| {
         Box::new(|result| {
             let entry = match result {
@@ -70,25 +169,27 @@ fn main() {
                 }
             };
 
-            // The first result is the root directory itself, which we've already printed.
-            if entry.depth() == 0 {
-                return WalkState::Continue;
-            }
+            if entry.depth() == 0 { return WalkState::Continue; }
 
-            if args.dirs_only && !entry.file_type().map_or(false, |ft| ft.is_dir()) {
-                return WalkState::Continue;
-            }
+            let is_dir = entry.file_type().map_or(false, |ft| ft.is_dir());
+            if args.dirs_only && !is_dir { return WalkState::Continue; }
 
-            // Generate the prefix based on the entry's depth
             let indent = "    ".repeat(entry.depth().saturating_sub(1));
             let name = entry.file_name().to_string_lossy();
-            
-            if entry.file_type().map_or(false, |ft| ft.is_dir()) {
+
+            let icon_str = if args.icons {
+                let (icon, color) = get_icon_for_path(entry.path(), is_dir);
+                format!("{} ", icon.color(color)) // Add a space after the icon
+            } else {
+                String::new() // If --icons is not used, the "icon" is an empty string
+            };
+
+            if is_dir {
                 dir_count.fetch_add(1, Ordering::Relaxed);
-                println!("{}└── {}", indent, name.blue());
+                println!("{}└── {}{}", indent, icon_str, name.blue());
             } else {
                 file_count.fetch_add(1, Ordering::Relaxed);
-                println!("{}└── {}", indent, name);
+                println!("{}└── {}{}", indent, icon_str, name);
             }
 
             WalkState::Continue

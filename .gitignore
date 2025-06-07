@@ -66,6 +66,8 @@ ehthumbs_vista.db
 # Miscellaneous Files
 # =============================================================================
 
-# Ignore temporary files created by various tools.
-README.html
-/README_files/
+# Ignore HTML files
+*.html
+
+# Ignore all directories with _files suffix
+*_files/
