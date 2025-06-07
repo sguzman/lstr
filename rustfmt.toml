@@ -21,4 +21,4 @@ reorder_imports = true
 # use rayon::prelude::*;
 #
 # use crate::my_module;
-group_imports = "StdExternalCrate"
+# group_imports = "StdExternalCrate"

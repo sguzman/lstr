@@ -14,10 +14,7 @@ enum ColorChoice {
 
 impl fmt::Display for ColorChoice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.to_possible_value()
-            .expect("no values are skipped")
-            .get_name()
-            .fmt(f)
+        self.to_possible_value().expect("no values are skipped").get_name().fmt(f)
     }
 }
 
@@ -34,11 +31,7 @@ struct Args {
     dirs_only: bool,
     #[arg(short = 'a', long, help = "Show all files, including hidden ones")]
     all: bool,
-    #[arg(
-        short = 'g',
-        long,
-        help = "Respect .gitignore and other standard ignore files"
-    )]
+    #[arg(short = 'g', long, help = "Respect .gitignore and other standard ignore files")]
     gitignore: bool,
     #[arg(long, help = "Display file-specific icons (requires a Nerd Font)")]
     icons: bool,
@@ -160,10 +153,7 @@ fn main() {
     println!("{}", args.path.display().to_string().blue());
 
     let mut builder = WalkBuilder::new(&args.path);
-    builder
-        .hidden(!args.all)
-        .git_ignore(args.gitignore)
-        .max_depth(args.level);
+    builder.hidden(!args.all).git_ignore(args.gitignore).max_depth(args.level);
 
     let walker = builder.build_parallel();
     let dir_count = AtomicU32::new(0);
