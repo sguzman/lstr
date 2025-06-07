@@ -8,10 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- ## [0.1.0] - 2025-06-06
+- ## [0.1.1] - 2025-06-06
 
 ### Added
-- Initial release of `ftree`.
+- Initial release of `lstr`.
 - Core recursive directory tree walking and printing functionality.
 - Colorized output for directories, configurable with the `--color` flag (`always`, `auto`, `never`).
 - Control over recursion depth via the `-L` flag.
