@@ -183,7 +183,7 @@ fn main() {
                 return WalkState::Continue;
             }
 
-            let is_dir = entry.file_type().map_or(false, |ft| ft.is_dir());
+            let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
             if args.dirs_only && !is_dir {
                 return WalkState::Continue;
             }
