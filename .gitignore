@@ -4,7 +4,7 @@
 
 # Ignore the build directory, where all compiled artifacts are stored.
 # This is the most important rule in any Rust project.
-/target/
+target/
 
 # Cargo.lock is intentionally NOT ignored. For a binary application like lstr,
 # committing Cargo.lock is crucial because it ensures that every developer

@@ -1,12 +1,18 @@
 [package]
 name = "lstr"
-version = "0.1.2" 
+version = "0.1.0" # Start with a 0.1.0 version for the initial release
+authors = ["Brandon Greenwell <greenwell.brandon@gmail.com>"]
 edition = "2021"
-description = "A blazingly fast, minimalist directory tree viewer"
-license = "MIT"
+description = "A blazingly fast, minimalist directory tree viewer, written in Rust."
+license = "MIT" 
 readme = "README.md"
+homepage = "https://github.com/bgreenwell/lstr" 
+repository = "https://github.com/bgreenwell/lstr" 
+keywords = ["ls", "tree", "filesystem", "command-line"]
+categories = ["command-line-utilities", "filesystem"]
 
 [dependencies]
 clap = { version = "4.5.7", features = ["derive"] }
 colored = "2.1.0"
 rayon = "1.10.0"
+ignore = "0.4.22"
