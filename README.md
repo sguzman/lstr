@@ -1,7 +1,7 @@
 # lstr
 
 [![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
-[![Changelog](https://img.shields.io/badge/changelog-v0.5.0-blue)](CHANGELOG.md)
+[![Changelog](https://img.shields.io/badge/Changelog-blue)](CHANGELOG.md)
 
 A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree).
 
