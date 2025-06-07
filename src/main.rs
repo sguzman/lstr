@@ -1,19 +1,25 @@
 use clap::{Parser, ValueEnum};
+use colored::{control, Color, Colorize};
+use ignore::{WalkBuilder, WalkState};
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
-use colored::{control, Colorize, Color};
-use ignore::{WalkBuilder, WalkState};
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
-enum ColorChoice { Always, Auto, Never }
+enum ColorChoice {
+    Always,
+    Auto,
+    Never,
+}
 
 impl fmt::Display for ColorChoice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.to_possible_value().expect("no values are skipped").get_name().fmt(f)
+        self.to_possible_value()
+            .expect("no values are skipped")
+            .get_name()
+            .fmt(f)
     }
 }
-
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -28,7 +34,11 @@ struct Args {
     dirs_only: bool,
     #[arg(short = 'a', long, help = "Show all files, including hidden ones")]
     all: bool,
-    #[arg(short = 'g', long, help = "Respect .gitignore and other standard ignore files")]
+    #[arg(
+        short = 'g',
+        long,
+        help = "Respect .gitignore and other standard ignore files"
+    )]
     gitignore: bool,
     #[arg(long, help = "Display file-specific icons (requires a Nerd Font)")]
     icons: bool,
@@ -37,7 +47,7 @@ struct Args {
 /// Returns a Nerd Font icon and a color for a given path.
 fn get_icon_for_path(path: &Path, is_dir: bool) -> (String, Color) {
     if is_dir {
-        return ("".to_string(), Color::Blue);  // Folder icon
+        return ("".to_string(), Color::Blue); // Folder icon
     }
 
     let icon = match path.file_name().and_then(|s| s.to_str()) {
@@ -59,23 +69,23 @@ fn get_icon_for_path(path: &Path, is_dir: bool) -> (String, Color) {
                 Some("pdf") => "",
 
                 // Programming and scripting languages
-                Some("rs") => "",      // Rust
-                Some("r") | Some("R") => "", // R
-                Some("py") => "",      // Python
-                Some("js") => "",      // JavaScript
-                Some("ts") | Some("tsx") => "",      // TypeScript
-                Some("java") => "",      // Java
-                Some("kt") | Some("kts") => "",      // Kotlin
-                Some("swift") => "",   // Swift
-                Some("go") => "",      // Go
-                Some("php") => "",      // PHP
-                Some("rb") => "",      // Ruby
-                Some("c") | Some("h") => "",      // C
+                Some("rs") => "",                                          // Rust
+                Some("r") | Some("R") => "",                               // R
+                Some("py") => "",                                          // Python
+                Some("js") => "",                                          // JavaScript
+                Some("ts") | Some("tsx") => "",                            // TypeScript
+                Some("java") => "",                                        // Java
+                Some("kt") | Some("kts") => "",                            // Kotlin
+                Some("swift") => "",                                       // Swift
+                Some("go") => "",                                          // Go
+                Some("php") => "",                                         // PHP
+                Some("rb") => "",                                          // Ruby
+                Some("c") | Some("h") => "",                               // C
                 Some("cpp") | Some("hpp") | Some("cc") | Some("hh") => "", // C++
-                Some("cs") => "󰌛",      // C#
-                Some("sh") | Some("bash") | Some("zsh") => "",      // Shell
-                Some("asm") | Some("s") => "",      // Assembly
-                Some("wasm") => "",     // WebAssembly
+                Some("cs") => "󰌛",                                          // C#
+                Some("sh") | Some("bash") | Some("zsh") => "",             // Shell
+                Some("asm") | Some("s") => "",                             // Assembly
+                Some("wasm") => "",                                        // WebAssembly
 
                 // Web
                 Some("html") => "",
@@ -90,19 +100,19 @@ fn get_icon_for_path(path: &Path, is_dir: bool) -> (String, Color) {
                 Some("env") => "",
                 Some("sql") | Some("db") | Some("sqlite3") => "",
                 Some("csv") => "",
-                Some("lock") => "", // Generic lock file
+                Some("lock") => "",   // Generic lock file
                 Some("gradle") => "", // Gradle/Android
-                Some("tf") => "", // Terraform
+                Some("tf") => "",     // Terraform
 
                 // Archives
                 Some("zip") | Some("gz") | Some("tar") | Some("rar") => "",
-                
+
                 // Media and fonts
                 Some("png") | Some("jpg") | Some("jpeg") | Some("gif") => "",
                 Some("mp3") | Some("flac") | Some("wav") => "",
                 Some("mp4") | Some("mov") | Some("mkv") => "",
                 Some("ttf") | Some("otf") | Some("woff") | Some("woff2") => "",
-                
+
                 _ => "", // Default file icon
             }
         }
@@ -111,12 +121,12 @@ fn get_icon_for_path(path: &Path, is_dir: bool) -> (String, Color) {
     // Determine color based on the icon
     let color = match icon {
         // Languages
-        "" | "" => Color::Red,          // Rust, Java
-        "" | "" | "" | "" | "" | "" => Color::Blue,  // R, C, C++, TS, Docker, Terraform
-        "" | "" => Color::Yellow,       // Python, JS
-        "" | "" | "" => Color::BrightRed, // Swift, PHP, Ruby
-        "" | "" => Color::Green,        // Go, Shell
-        "󰌛" | "" => Color::Magenta,    // C#, Kotlin
+        "" | "" => Color::Red,                          // Rust, Java
+        "" | "" | "" | "" | "" | "" => Color::Blue, // R, C, C++, TS, Docker, Terraform
+        "" | "" => Color::Yellow,                       // Python, JS
+        "" | "" | "" => Color::BrightRed,              // Swift, PHP, Ruby
+        "" | "" => Color::Green,                        // Go, Shell
+        "󰌛" | "" => Color::Magenta,                      // C#, Kotlin
 
         // Config and data
         "" | "󰗊" | "" => Color::BrightYellow,
@@ -124,10 +134,10 @@ fn get_icon_for_path(path: &Path, is_dir: bool) -> (String, Color) {
         "" | "" => Color::Cyan,
 
         // Other
-        "" => Color::BrightBlack,  // Git
-        "" | "" | "" => Color::Magenta,      // Media
-        "" => Color::BrightRed,    // Archives
-        _ => Color::White,          // Default color for other icons
+        "" => Color::BrightBlack,         // Git
+        "" | "" | "" => Color::Magenta, // Media
+        "" => Color::BrightRed,           // Archives
+        _ => Color::White,                 // Default color for other icons
     };
 
     (icon.to_string(), color)
@@ -146,7 +156,7 @@ fn main() {
         eprintln!("lstr: Error: '{}' is not a directory.", args.path.display());
         std::process::exit(1);
     }
-    
+
     println!("{}", args.path.display().to_string().blue());
 
     let mut builder = WalkBuilder::new(&args.path);
@@ -169,10 +179,14 @@ fn main() {
                 }
             };
 
-            if entry.depth() == 0 { return WalkState::Continue; }
+            if entry.depth() == 0 {
+                return WalkState::Continue;
+            }
 
             let is_dir = entry.file_type().map_or(false, |ft| ft.is_dir());
-            if args.dirs_only && !is_dir { return WalkState::Continue; }
+            if args.dirs_only && !is_dir {
+                return WalkState::Continue;
+            }
 
             let indent = "    ".repeat(entry.depth().saturating_sub(1));
             let name = entry.file_name().to_string_lossy();
@@ -196,5 +210,9 @@ fn main() {
         })
     });
 
-    println!("\n{} directories, {} files", dir_count.load(Ordering::Relaxed), file_count.load(Ordering::Relaxed));
+    println!(
+        "\n{} directories, {} files",
+        dir_count.load(Ordering::Relaxed),
+        file_count.load(Ordering::Relaxed)
+    );
 }
