@@ -1,11 +1,14 @@
 # lstr
 
+[![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
+[![Changelog](https://img.shields.io/badge/changelog-v0.1.0-blue)](CHANGELOG.md)
+
+
 A blazingly fast, minimalist directory tree viewer, written in Rust.
 
 `lstr` (`LiSt-TRree`) walks a directory and prints its contents in a tree structure. It is designed with the Unix philosophy in mind: do one thing and do it well, with a focus on speed and simplicity.
 
-![lstr screenshot](screenshot.png) 
-*(Note: You will need to replace this with an actual screenshot URL after you run it)*
+![**Fig.** Screenshot of output from **lstr**.](assets/screenshot.png) 
 
 ## Philosophy
 
@@ -21,7 +24,6 @@ A blazingly fast, minimalist directory tree viewer, written in Rust.
 -   Control listing depth (`-L`).
 -   Option to list directories only (`-d`).
 -   Support for showing hidden files (`-a`).
--   Option to run in single-threaded (serial) mode (`--serial`).
 
 ### Color Output
 
