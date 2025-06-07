@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support [Nerd Fonts](https://www.nerdfonts.com/) to display file-specific icons via a new `--icons` argument.
+- Directory names are now displayed in bold for better visibility.
 
 ## [0.1.1] - 2025-06-06
 

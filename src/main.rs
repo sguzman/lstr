@@ -150,7 +150,9 @@ fn main() {
         std::process::exit(1);
     }
 
-    println!("{}", args.path.display().to_string().blue());
+    //println!("{}", args.path.display().to_string().blue());
+    println!("{}", args.path.display().to_string().blue().bold());
+
 
     let mut builder = WalkBuilder::new(&args.path);
     builder.hidden(!args.all).git_ignore(args.gitignore).max_depth(args.level);
@@ -190,7 +192,8 @@ fn main() {
 
             if is_dir {
                 dir_count.fetch_add(1, Ordering::Relaxed);
-                println!("{}└── {}{}", indent, icon_str, name.blue());
+                //println!("{}└── {}{}", indent, icon_str, name.blue());
+                println!("{}└── {}{}", indent, icon_str, name.blue().bold());
             } else {
                 file_count.fetch_add(1, Ordering::Relaxed);
                 println!("{}└── {}{}", indent, icon_str, name);
