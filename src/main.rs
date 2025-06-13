@@ -7,6 +7,7 @@
 mod app;
 mod icons;
 mod tui;
+mod utils;
 mod view;
 
 use app::{Args, Commands};

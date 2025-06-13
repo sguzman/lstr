@@ -41,6 +41,9 @@ pub struct ViewArgs {
     /// Display directories only.
     #[arg(short = 'd', long)]
     pub dirs_only: bool,
+    /// Display the size of files.
+    #[arg(short = 's', long)]
+    pub size: bool,
     /// Show all files, including hidden ones.
     #[arg(short = 'a', long, help = "Show all files, including hidden ones")]
     pub all: bool,
@@ -67,6 +70,9 @@ pub struct InteractiveArgs {
     /// Display file-specific icons (requires a Nerd Font).
     #[arg(long)]
     pub icons: bool,
+    /// Display the size of files.
+    #[arg(short = 's', long)]
+    pub size: bool,
     /// Initial depth to expand the directory tree.
     #[arg(long, value_name = "LEVEL")]
     pub expand_level: Option<usize>,

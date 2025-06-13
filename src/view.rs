@@ -2,6 +2,7 @@
 
 use crate::app::ViewArgs;
 use crate::icons;
+use crate::utils; // Import our new utils module
 use colored::{control, Colorize};
 use ignore::{WalkBuilder, WalkState};
 use std::io::{self, Write};
@@ -67,12 +68,24 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
                 String::new()
             };
 
+            // If --size is passed, get the file size and format it.
+            let size_str = if args.size && !is_dir {
+                entry
+                    .metadata()
+                    .ok()
+                    .map(|m| format!(" ({})", utils::format_size(m.len())))
+                    .unwrap_or_default()
+            } else {
+                String::new()
+            };
+
             if is_dir {
                 dir_count.fetch_add(1, Ordering::Relaxed);
                 write_line!("{}└── {}{}", indent, icon_str, name.blue().bold());
             } else {
                 file_count.fetch_add(1, Ordering::Relaxed);
-                write_line!("{}└── {}{}", indent, icon_str, name);
+                // Append the size string to the output for files.
+                write_line!("{}└── {}{}{}", indent, icon_str, name, size_str.dimmed());
             }
 
             WalkState::Continue
