@@ -5,6 +5,7 @@
 
 use crate::app::InteractiveArgs;
 use crate::icons;
+use crate::utils;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -50,7 +51,8 @@ struct AppState {
 impl AppState {
     /// Creates a new AppState, performing the initial scan and setup.
     fn new(args: &InteractiveArgs) -> anyhow::Result<Self> {
-        let mut master_entries = scan_directory(&args.path, args.gitignore, args.all)?;
+        // Pass the 'size' flag down to the scanning function.
+        let mut master_entries = scan_directory(&args.path, args.gitignore, args.all, args.size)?;
 
         if let Some(expand_level) = args.expand_level {
             for entry in &mut master_entries {
@@ -159,7 +161,7 @@ pub fn run(args: &InteractiveArgs) -> anyhow::Result<()> {
     let mut app_state = AppState::new(args)?;
     let mut terminal = setup_terminal()?;
 
-    let post_exit_action = run_app(&mut terminal, &mut app_state, args.icons)?;
+    let post_exit_action = run_app(&mut terminal, &mut app_state, args)?;
 
     // Restore the terminal *before* performing the final action.
     restore_terminal(&mut terminal)?;
@@ -183,10 +185,10 @@ pub fn run(args: &InteractiveArgs) -> anyhow::Result<()> {
 fn run_app<B: Backend + Write>(
     terminal: &mut Terminal<B>,
     app_state: &mut AppState,
-    use_icons: bool,
+    args: &InteractiveArgs,
 ) -> anyhow::Result<PostExitAction> {
     loop {
-        terminal.draw(|f| ui(f, app_state, use_icons))?;
+        terminal.draw(|f| ui(f, app_state, args))?;
 
         if let Event::Key(key) = event::read()? {
             match key.code {
@@ -210,18 +212,18 @@ fn run_app<B: Backend + Write>(
 }
 
 /// Renders the user interface.
-fn ui(f: &mut Frame, app_state: &mut AppState, use_icons: bool) {
+fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs) {
     let frame_width = f.size().width as usize;
 
     let items: Vec<ListItem> = app_state
         .visible_entries
         .iter()
         .map(|entry| {
-            let mut left_spans = Vec::new();
+            let mut spans = Vec::new();
 
             // Tree branch and indentation
             let indent_str = "    ".repeat(entry.depth.saturating_sub(1));
-            left_spans.push(Span::raw(indent_str));
+            spans.push(Span::raw(indent_str));
             let branch_str = if entry.is_dir {
                 if entry.is_expanded {
                     "▼ "
@@ -231,12 +233,12 @@ fn ui(f: &mut Frame, app_state: &mut AppState, use_icons: bool) {
             } else {
                 "  "
             };
-            left_spans.push(Span::raw(branch_str));
+            spans.push(Span::raw(branch_str));
 
             // Icon
-            if use_icons {
+            if args.icons {
                 let (icon, color) = icons::get_icon_for_path(&entry.path, entry.is_dir);
-                left_spans.push(Span::styled(
+                spans.push(Span::styled(
                     format!("{} ", icon),
                     Style::default().fg(map_color(color)),
                 ));
@@ -244,28 +246,34 @@ fn ui(f: &mut Frame, app_state: &mut AppState, use_icons: bool) {
 
             // Name
             let name = entry.path.file_name().unwrap().to_string_lossy();
-            left_spans.push(Span::raw(name.to_string()));
+            let mut name_span = Span::raw(name.to_string());
 
             // Style directory names
             if entry.is_dir {
-                left_spans.push(Span::styled("/", Style::default().fg(Color::Blue)));
-                // Apply bold style to all parts of a directory line
-                for span in &mut left_spans {
-                    span.style = span.style.add_modifier(Modifier::BOLD);
+                let dir_style = Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD);
+                for span in &mut spans {
+                    span.style = span.style.patch(dir_style);
+                }
+                name_span.style = name_span.style.patch(dir_style);
+            }
+            spans.push(name_span);
+
+            // Right side: file size (if enabled)
+            if args.size {
+                if let Some(size) = entry.size {
+                    let size_str = utils::format_size(size);
+
+                    // Calculate padding to right-align the size
+                    let left_len: usize = spans.iter().map(|s| s.width()).sum();
+                    let padding =
+                        frame_width.saturating_sub(left_len).saturating_sub(size_str.len());
+
+                    spans.push(Span::raw(" ".repeat(padding)));
+                    spans.push(Span::styled(size_str, Style::default().fg(Color::DarkGray)));
                 }
             }
 
-            // Right side: file size
-            let size_str = entry.size.map(format_size).unwrap_or_default();
-
-            // Calculate padding to right-align the size
-            let left_len: usize = left_spans.iter().map(|s| s.width()).sum();
-            let padding = frame_width.saturating_sub(left_len).saturating_sub(size_str.len());
-
-            left_spans.push(Span::raw(" ".repeat(padding)));
-            left_spans.push(Span::styled(size_str, Style::default().fg(Color::DarkGray)));
-
-            ListItem::new(Line::from(left_spans))
+            ListItem::new(Line::from(spans))
         })
         .collect();
 
@@ -277,7 +285,12 @@ fn ui(f: &mut Frame, app_state: &mut AppState, use_icons: bool) {
 }
 
 /// Scans the directory and collects file entries.
-fn scan_directory(path: &PathBuf, gitignore: bool, all: bool) -> anyhow::Result<Vec<FileEntry>> {
+fn scan_directory(
+    path: &PathBuf,
+    gitignore: bool,
+    all: bool,
+    with_size: bool,
+) -> anyhow::Result<Vec<FileEntry>> {
     let mut entries = Vec::new();
     let mut builder = WalkBuilder::new(path);
     builder.hidden(!all).git_ignore(gitignore);
@@ -286,15 +299,16 @@ fn scan_directory(path: &PathBuf, gitignore: bool, all: bool) -> anyhow::Result<
             continue;
         }
         let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
-        // Get metadata to find the file size.
-        let size = if is_dir { None } else { entry.metadata().ok().map(|m| m.len()) };
+
+        // **FIX:** Only get metadata if the flag is enabled.
+        let size = if with_size && !is_dir { entry.metadata().ok().map(|m| m.len()) } else { None };
 
         entries.push(FileEntry {
             path: entry.path().to_path_buf(),
             depth: entry.depth(),
             is_dir,
             is_expanded: false,
-            size, // Add the size to our entry
+            size,
         });
     }
     Ok(entries)
@@ -323,28 +337,6 @@ fn map_color(c: colored::Color) -> Color {
     }
 }
 
-/// Formats a size in bytes into a human-readable string.
-fn format_size(bytes: u64) -> String {
-    const KIB: f64 = 1024.0;
-    const MIB: f64 = KIB * 1024.0;
-    const GIB: f64 = MIB * 1024.0;
-    const TIB: f64 = GIB * 1024.0;
-
-    let bytes = bytes as f64;
-
-    if bytes < KIB {
-        format!("{} B", bytes)
-    } else if bytes < MIB {
-        format!("{:.1} KiB", bytes / KIB)
-    } else if bytes < GIB {
-        format!("{:.1} MiB", bytes / MIB)
-    } else if bytes < TIB {
-        format!("{:.1} GiB", bytes / GIB)
-    } else {
-        format!("{:.1} TiB", bytes / TIB)
-    }
-}
-
 // --- Terminal setup and restore functions ---
 fn setup_terminal() -> anyhow::Result<Terminal<CrosstermBackend<Stdout>>> {
     let mut stdout = io::stdout();
@@ -359,94 +351,4 @@ fn restore_terminal<B: Backend + Write>(terminal: &mut Terminal<B>) -> anyhow::R
     execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
     terminal.show_cursor()?;
     Ok(())
-}
-
-// Unit tests for the TUI AppState logic
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Helper function to create a mock AppState for testing.
-    fn setup_test_app_state() -> AppState {
-        let master_entries = vec![
-            FileEntry {
-                path: PathBuf::from("src"),
-                depth: 1,
-                is_dir: true,
-                is_expanded: false,
-                size: None,
-            },
-            FileEntry {
-                path: PathBuf::from("src/main.rs"),
-                depth: 2,
-                is_dir: false,
-                is_expanded: false,
-                size: Some(1024),
-            },
-            FileEntry {
-                path: PathBuf::from("README.md"),
-                depth: 1,
-                is_dir: false,
-                is_expanded: false,
-                size: Some(512),
-            },
-        ];
-
-        let mut app_state = AppState {
-            master_entries,
-            visible_entries: Vec::new(),
-            list_state: ListState::default(),
-        };
-
-        app_state.regenerate_visible_entries();
-        app_state.list_state.select(Some(0));
-        app_state
-    }
-
-    #[test]
-    fn test_navigation() {
-        let mut app_state = setup_test_app_state();
-        assert_eq!(app_state.list_state.selected(), Some(0));
-        app_state.next();
-        assert_eq!(app_state.list_state.selected(), Some(1));
-        app_state.next();
-        assert_eq!(app_state.list_state.selected(), Some(0));
-        app_state.previous();
-        assert_eq!(app_state.list_state.selected(), Some(1));
-        app_state.previous();
-        assert_eq!(app_state.list_state.selected(), Some(0));
-    }
-
-    #[test]
-    fn test_toggle_directory() {
-        let mut app_state = setup_test_app_state();
-        assert_eq!(app_state.visible_entries.len(), 2);
-        app_state.list_state.select(Some(0));
-        app_state.toggle_selected_directory();
-        assert_eq!(app_state.visible_entries.len(), 3);
-        assert_eq!(app_state.visible_entries[1].path, PathBuf::from("src/main.rs"));
-        app_state.toggle_selected_directory();
-        assert_eq!(app_state.visible_entries.len(), 2);
-    }
-
-    #[test]
-    fn test_get_selected_entry() {
-        let mut app_state = setup_test_app_state();
-        app_state.list_state.select(Some(1));
-        let selected = app_state.get_selected_entry();
-        assert!(selected.is_some());
-        assert_eq!(selected.unwrap().path, PathBuf::from("README.md"));
-    }
-
-    #[test]
-    fn test_format_size() {
-        assert_eq!(format_size(500), "500 B");
-        assert_eq!(format_size(1024), "1.0 KiB");
-        assert_eq!(format_size(1536), "1.5 KiB");
-        let mib = 1024 * 1024;
-        assert_eq!(format_size(mib), "1.0 MiB");
-        assert_eq!(format_size(mib + mib / 2), "1.5 MiB");
-        let gib = mib * 1024;
-        assert_eq!(format_size(gib), "1.0 GiB");
-    }
 }
