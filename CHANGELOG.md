@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   **Interactive Mode**: A new `interactive` subcommand that launches a terminal-based UI.
+  -   Keyboard-driven navigation of the file tree (`Up`/`Down`, `j`/`k`).
+  -   Directory expansion and collapsing with the `Enter` key.
+  -   Ability to open selected files in the default editor (`$EDITOR`) by pressing `Enter`.
+  -   Shell integration support via `Ctrl+s` to quit and print the selected path.
+  -   Support for `-g` (`--gitignore`), `-a` (`--all`), and `--icons` flags in interactive mode.
+  -   A new `--expand-level` flag to set the initial expansion depth in interactive mode.
 - Support [Nerd Fonts](https://www.nerdfonts.com/) to display file-specific icons via a new `--icons` argument.
 - Directory names are now displayed in bold for better visibility.
 

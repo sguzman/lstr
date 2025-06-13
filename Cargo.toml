@@ -12,7 +12,16 @@ keywords = ["ls", "tree", "filesystem", "command-line"]
 categories = ["command-line-utilities", "filesystem"]
 
 [dependencies]
-clap = { version = "4.5.7", features = ["derive"] }
+anyhow = "1.0"
 colored = "2.1.0"
-rayon = "1.10.0"
+clap = { version = "4.5.7", features = ["derive"] }
+crossterm = "0.27.0"
 ignore = "0.4.22"
+ratatui = "0.27.0"
+rayon = "1.10.0"
+
+# Dependencies for testing the command-line interface
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.10"

@@ -3,27 +3,35 @@
 [![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
 [![Changelog](https://img.shields.io/badge/Changelog-blue)](CHANGELOG.md)
 
-A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree).
+A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree), with a powerful interactive mode.
 
-![lstr screenshot](assets/screenshot.png)
-*A clean overview of a project's structure, with specific Nerd Font icons for file types like Rust (``), Cargo configs (``), and licenses (``).*
+![](assets/lstr-demo.gif)
+*An interactive overview of **lstr**'s project structure... using **lstr**.*
 
 ## Philosophy
 
--   **Fast:** Runs directory scans in parallel by default to maximize speed on modern hardware.
--   **Minimalist:** Provides essential features without the bloat. The core experience is clean and uncluttered.
--   **Authentic:** Adheres to the spirit of classic command-line utilities.
+  - **Fast:** Runs directory scans in parallel by default to maximize speed on modern hardware.
+  - **Minimalist:** Provides essential features without the bloat. The core experience is clean and uncluttered.
+  - **Interactive:** An optional TUI mode for fluid, keyboard-driven exploration.
 
 ## Features
 
--   Recursive directory listing with a visual tree structure.
--   Parallel directory traversal enabled by default for high performance.
--   Configurable colorized output for easy identification (`--color`).
--   Display file-specific icons via the `--icons` flag to quickly identify file types (requires a [Nerd Font](https://www.nerdfonts.com/)).
--   Control over listing depth (`-L`).
--   Option to display directories only (`-d`).
--   Support for showing hidden files (`-a`).
--   Ability to respect `.gitignore` and other standard ignore files via the `-g` flag.
+### Classic view
+
+  - Recursive directory listing with a visual tree structure.
+  - Parallel directory traversal enabled by default for high performance.
+  - Configurable colorized output for easy identification (`--color`).
+  - Control over listing depth (`-L`).
+  - Option to display directories only (`-d`).
+
+### Interactive mode (`lstr interactive`)
+
+  - A terminal-based user interface for navigating the file tree.
+  - Expand and collapse directories on the fly.
+  - Open any file in your default editor (`$EDITOR`) with the `Enter` key.
+  - Integrates with your shell for quickly changing directories.
+  - Supports `--icons`, `--gitignore`, and `--all` flags.
+  - Set the initial expansion depth with `--expand-level`.
 
 ## Installation
 
@@ -32,7 +40,7 @@ You need the Rust toolchain installed on your system to build **lstr**.
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/lstr.git
+    git clone https://github.com/bgreenwell/lstr.git
     cd lstr
     ```
 
@@ -42,106 +50,111 @@ You need the Rust toolchain installed on your system to build **lstr**.
     # This compiles in release mode and copies the binary to ~/.cargo/bin
     cargo install --path .
     ```
+
     Once published, it can be installed with `cargo install lstr`.
 
 ## Usage
 
 ```
 lstr [OPTIONS] [PATH]
+lstr interactive [OPTIONS] [PATH]
 ```
 
-### **Arguments:**
+### **Options (classic view):**
 
--   `[PATH]`
-    -   The directory path to list. Defaults to the current directory (`.`).
+  - `-L, --level <LEVEL>`: Maximum depth to descend.
+  - `-d, --dirs-only`: List directories only, ignoring all files.
+  - `--color <WHEN>`: Specify when to use color output (`always`, `auto`, `never`).
 
-### **Options:**
+### **Options (both views):**
 
--   `-g, --gitignore`
-    -   Respect `.gitignore` and other standard ignore files.
+  - `-g, --gitignore`: Respect `.gitignore` and other standard ignore files.
+  - `-a, --all`: List all files and directories, including hidden ones.
+  - `--icons`: Display file-specific icons (requires a [Nerd Font](https://www.nerdfonts.com/)).
 
--   `--color <WHEN>`
-    -   Specify when to use color output (`always`, `auto`, `never`).
+### **Options (interactive mode):**
 
--   `-L, --level <LEVEL>`
-    -   Maximum depth to descend.
+  - `--expand-level <LEVEL>`: Initial depth to expand the directory tree.
 
--   `-d, --dirs-only`
-    -   List directories only, ignoring all files.
+-----
 
--   `-a, --all`
-    -   List all files and directories, including hidden ones.
+## Interactive mode
 
--   `-h, --help`
-    -   Show the help message.
+Launch the TUI with `lstr interactive`.
 
--   `-V, --version`
-    -   Show the version information.
+### Keyboard controls
+
+| Key(s) | Action |
+| :--- | :--- |
+| `↑` / `k` | Move selection up. |
+| `↓` / `j` | Move selection down. |
+| `Enter` | **Context-aware action:**\<br/\>- If on a file: Open it in the default editor (`$EDITOR`).\<br/\>- If on a directory: Toggle expand/collapse. |
+| `q` / `Esc` | Quit the application normally. |
+| `Ctrl+s` | **Select and quit**: Quit and print the selected path to standard output for `cd` integration. |
 
 ## Examples
 
-Here are a few common ways to use **lstr**.
-
 **1. List the contents of the current directory**
+
 ```bash
 lstr
 ```
 
-**2. Display a directory two levels deep, ignoring gitignored files**
+**2. Explore a project interactively, ignoring gitignored files**
+
+```bash
+lstr interactive -g --icons
+```
+
+**3. Start an interactive session expanded two levels deep**
+
+```bash
+lstr interactive --expand-level 2
+```
+
+**4. Display a directory two levels deep (classic view)**
+
 ```bash
 lstr -L 2 -g
 ```
 
-**3. Show only the directory structure**
+## Piping and Shell Interaction
+
+The classic `view` mode is designed to work well with other command-line tools via pipes (`|`).
+
+### Interactive Fuzzy Finding with **fzf**
+
+This is a powerful way to instantly find any file in a large project.
+
 ```bash
-lstr -d
+lstr -a -g --icons | fzf
 ```
 
-**4. Find all Rust files in a project**
+**fzf** will take the tree from **lstr** and provide an interactive search prompt to filter it.
+
+### Paging Large Trees with less or bat
+
+If a directory is too large to fit on one screen, pipe the output to a *pager*.
+
 ```bash
-lstr --color never | grep "\.rs$"
+# Using less (the -R flag preserves color)
+lstr -L 10 | less -R
+
+# Using bat (a modern pager that understands colors)
+lstr --icons | bat
 ```
 
-**8. Get a rich visual overview with icons**
-Use the `--icons` flag for a modern, easy-to-parse view. This is best used with `-g` to hide build artifacts.
-```bash
-lstr -g --icons
-```
-
-
-## Performance & Concurrency
+## Performance and concurrency
 
 By default, **lstr** uses a parallel directory walker to maximize speed on multi-core systems. This parallelism is managed by the excellent [rayon](https://crates.io/crates/rayon) thread pool, which is used internally by **lstr**'s directory traversal engine.
 
 For advanced use cases, such as benchmarking or limiting CPU usage, you can control the number of threads by setting the `RAYON_NUM_THREADS` environment variable before running the command.
 
 **To force single-threaded (serial) execution:**
+
 ```bash
 RAYON_NUM_THREADS=1 lstr .
 ```
-
-**To limit the tool to 4 threads:**
-```bash
-RAYON_NUM_THREADS=4 lstr .
-```
-
-### Benchmarking
-
-This project uses [hyperfine](https://github.com/sharkdp/hyperfine) for benchmarking performance:
-```bash
-hyperfine --warmup 1 --prepare 'sudo purge' --show-output 'lstr ~/Dropbox' 'lstr ~/Dropbox --icons' 'tree ~/Dropbox'
-```
-```
-2307 directories, 14045 files
-  Time (mean ± σ):     219.2 ms ±  44.5 ms    [User: 49.6 ms, System: 85.1 ms]
-  Range (min … max):   161.2 ms … 287.5 ms    10 runs
-
-Summary
-  lstr ~/Dropbox ran
-    1.37 ± 0.56 times faster than lstr ~/Dropbox --icons
-    2.08 ± 0.49 times faster than tree ~/Dropbox
-```
-
 
 ## Inspiration
 
