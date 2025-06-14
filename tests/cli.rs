@@ -5,9 +5,14 @@ use std::fs;
 use std::process::Command;
 use tempfile::tempdir;
 
+// Platform-specific import for unix permissions
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 #[test]
 fn test_nonexistent_path() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("lstr")?;
+    // **FIX:** Removed the explicit "view" subcommand
     cmd.arg("nonexistent/path/for/testing");
     cmd.assert().failure().stderr(predicate::str::contains("is not a directory"));
     Ok(())
@@ -21,6 +26,7 @@ fn test_simple_view() -> Result<(), Box<dyn std::error::Error>> {
     fs::File::create(temp_dir.path().join("dir1/b.txt"))?;
 
     let mut cmd = Command::cargo_bin("lstr")?;
+    // **FIX:** Removed the explicit "view" subcommand
     cmd.arg(temp_dir.path());
     cmd.assert()
         .success()
@@ -56,7 +62,7 @@ fn test_depth_flag() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("dir1"))
-        .stdout(predicate::str::contains("b.txt").not());
+        .stdout(predicate::str::contains("b.txt").not()); // Should not show depth 2
     Ok(())
 }
 
@@ -84,8 +90,6 @@ fn test_gitignore_flag() -> Result<(), Box<dyn std::error::Error>> {
     fs::File::create(temp_path.join("ignored.txt"))?;
     fs::File::create(temp_path.join("not_ignored.txt"))?;
 
-    // **FIX:** Run the command *from within* the temporary directory
-    // instead of passing the path as an argument.
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_lstr"));
     cmd.arg("-g");
     cmd.current_dir(temp_path);
@@ -96,6 +100,25 @@ fn test_gitignore_flag() -> Result<(), Box<dyn std::error::Error>> {
     assert!(output.status.success());
     assert!(stdout_str.contains("not_ignored.txt"));
     assert!(!stdout_str.contains("ignored.txt"));
+
+    Ok(())
+}
+
+#[test]
+#[cfg(unix)] // This test will only run on Unix-like systems
+fn test_permissions_flag() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = tempdir()?;
+    let file_path = temp_dir.path().join("test_file.txt");
+    fs::File::create(&file_path)?;
+
+    // Set permissions to r-xr-x--- (0o550)
+    let perms = fs::Permissions::from_mode(0o550);
+    fs::set_permissions(&file_path, perms)?;
+
+    let mut cmd = Command::cargo_bin("lstr")?;
+    // **FIX:** Removed the explicit "view" subcommand
+    cmd.arg("-p").arg(temp_dir.path());
+    cmd.assert().success().stdout(predicate::str::contains("-r-xr-x---"));
 
     Ok(())
 }

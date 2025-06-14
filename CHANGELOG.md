@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added an optional `-s, --size` flag to display file sizes in both classic and interactive modes.
+-   Added an optional `-p, --permissions` flag to display file permissions in both classic and interactive modes (**Unix-like systems only**).
 -   **Interactive Mode**: A new `interactive` subcommand that launches a terminal-based UI.
   -   Keyboard-driven navigation of the file tree (`Up`/`Down`, `j`/`k`).
   -   Directory expansion and collapsing with the `Enter` key.

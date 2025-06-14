@@ -14,24 +14,16 @@ A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by
   - **Minimalist:** Provides essential features without the bloat. The core experience is clean and uncluttered.
   - **Interactive:** An optional TUI mode for fluid, keyboard-driven exploration.
 
-## Features
-
-### Classic view
-
-  - Recursive directory listing with a visual tree structure.
-  - Parallel directory traversal enabled by default for high performance.
-  - Configurable colorized output for easy identification (`--color`).
-  - Control over listing depth (`-L`).
-  - Option to display directories only (`-d`).
-
-### Interactive mode (`lstr interactive`)
-
-  - A terminal-based user interface for navigating the file tree.
-  - Expand and collapse directories on the fly.
-  - Open any file in your default editor (`$EDITOR`) with the `Enter` key.
-  - Integrates with your shell for quickly changing directories.
-  - Supports `--icons`, `--gitignore`, and `--all` flags.
-  - Set the initial expansion depth with `--expand-level`.
+-   **High-performance:** Scans directories in parallel to be as fast as possible.
+-   **Classic and interactive modes:** Use `lstr` for a classic `tree`-like view, or launch `lstr interactive` for a fully interactive TUI.
+-   **Rich information display (optional):**
+    -   Display file-specific icons with `--icons` (requires a Nerd Font).
+    -   Show file permissions with `-p`.
+    -   Show file sizes with `-s`.
+    -   Git status integration (coming soon).
+-   **Smart filtering:**
+    -   Respects your `.gitignore` files with the `-g` flag.
+    -   Control recursion depth (`-L`) or show only directories (`-d`).
 
 ## Installation
 
@@ -40,7 +32,7 @@ You need the Rust toolchain installed on your system to build **lstr**.
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/bgreenwell/lstr.git
+    git clone [https://github.com/bgreenwell/lstr.git](https://github.com/bgreenwell/lstr.git)
     cd lstr
     ```
 
@@ -53,34 +45,90 @@ You need the Rust toolchain installed on your system to build **lstr**.
 
     Once published, it can be installed with `cargo install lstr`.
 
+Developer: lstr
+Custom Gem
+
+Show thinking
+Of course. It's a great idea to refactor the documentation for clarity and impact. A clean README.md makes a project much more approachable.
+
+Based on the version of the README.md you provided, here is a revision of the Features and Usage sections to be more consistent and clear, as you requested.
+
+README.md (Revised Sections)
+Markdown
+
+# lstr
+
+[![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
+[![Changelog](https://img.shields.io/badge/Changelog-blue)](CHANGELOG.md)
+
+A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree).
+
+![lstr screenshot](assets/screenshot.png)
+*A clean overview of a project's structure, with specific Nerd Font icons for file types like Rust (``), Cargo configs (``), and licenses (``).*
+
+## Philosophy
+
+-   **Fast:** Runs directory scans in parallel by default to maximize speed on modern hardware.
+-   **Minimalist:** Provides essential features without the bloat. The core experience is clean and uncluttered.
+-   **Authentic:** Adheres to the spirit of classic command-line utilities.
+
+## Features
+
+-   **High-Performance:** Scans directories in parallel to be as fast as possible.
+-   **Classic and Interactive Modes:** Use `lstr` for a classic `tree`-like view, or launch `lstr interactive` for a fully interactive TUI.
+-   **Rich Information Display (Optional):**
+    -   Display file-specific icons with `--icons` (requires a Nerd Font).
+    -   Show file permissions with `-p`.
+    -   Show file sizes with `-s`.
+    -   Git status integration (coming soon).
+-   **Smart Filtering:**
+    -   Respects your `.gitignore` files with the `-g` flag.
+    -   Control recursion depth (`-L`) or show only directories (`-d`).
+
+## Installation
+
+You need the Rust toolchain installed on your system to build **lstr**.
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone [https://github.com/your-username/lstr.git](https://github.com/your-username/lstr.git)
+    cd lstr
+    ```
+   
+
+2.  **Build and install using Cargo:**
+
+    ```bash
+    # This compiles in release mode and copies the binary to ~/.cargo/bin
+    cargo install --path .
+    ```
+   
 ## Usage
 
+```bash
+lstr [OPTIONS] [PATH]  # or [PATH] [OPTIONS]
+lstr interactive [OPTIONS] [PATH]  # or [PATH] [OPTIONS]
 ```
-lstr [OPTIONS] [PATH]
-lstr interactive [OPTIONS] [PATH]
-```
+Note that `PATH` defaults to the current directory (`.`) if not specified.
 
-### **Options (classic view):**
-
-  - `-L, --level <LEVEL>`: Maximum depth to descend.
-  - `-d, --dirs-only`: List directories only, ignoring all files.
-  - `--color <WHEN>`: Specify when to use color output (`always`, `auto`, `never`).
-
-### **Options (both views):**
-
-  - `-g, --gitignore`: Respect `.gitignore` and other standard ignore files.
-  - `-a, --all`: List all files and directories, including hidden ones.
-  - `--icons`: Display file-specific icons (requires a [Nerd Font](https://www.nerdfonts.com/)).
-
-### **Options (interactive mode):**
-
-  - `--expand-level <LEVEL>`: Initial depth to expand the directory tree.
+| Option | Description |
+| :--- | :--- |
+| `-a`, `--all` | List all files and directories, including hidden ones. |
+| `--color <WHEN>` | Specify when to use color output (`always`, `auto`, `never`). |
+| `-d`, `--dirs-only`| List directories only, ignoring all files. |
+| `-g`, `--gitignore`| Respect `.gitignore` and other standard ignore files. |
+| `--icons` | Display file-specific icons; requires a [Nerd Font](https://www.nerdfonts.com/). |
+| `-L`, `--level <LEVEL>`| Maximum depth to descend. |
+| `-p`, `--permissions`| Display file permissions (Unix-like systems only). |
+| `-s`, `--size` | Display the size of files. |
+| `--expand-level <LEVEL>`| **Interactive mode only:** Initial depth to expand the interactive tree. |
 
 -----
 
 ## Interactive mode
 
-Launch the TUI with `lstr interactive`.
+Launch the TUI with `lstr interactive [OPTIONS] [PATH]`.
 
 ### Keyboard controls
 
@@ -88,9 +136,8 @@ Launch the TUI with `lstr interactive`.
 | :--- | :--- |
 | `↑` / `k` | Move selection up. |
 | `↓` / `j` | Move selection down. |
-| `Enter` | **Context-aware action:**\<br/\>- If on a file: Open it in the default editor (`$EDITOR`).\<br/\>- If on a directory: Toggle expand/collapse. |
+| `Enter` | **Context-aware action:**<br/>- If on a file: Open it in the default editor (`$EDITOR`).<br/>- If on a directory: Toggle expand/collapse. |
 | `q` / `Esc` | Quit the application normally. |
-| `Ctrl+s` | **Select and quit**: Quit and print the selected path to standard output for `cd` integration. |
 
 ## Examples
 
@@ -98,7 +145,7 @@ Launch the TUI with `lstr interactive`.
 
 ```bash
 lstr
-```
+````
 
 **2. Explore a project interactively, ignoring gitignored files**
 
@@ -106,16 +153,16 @@ lstr
 lstr interactive -g --icons
 ```
 
-**3. Start an interactive session expanded two levels deep**
+**3. Display a directory with file sizes and permissions (classic view)**
 
 ```bash
-lstr interactive --expand-level 2
+lstr -sp
 ```
 
-**4. Display a directory two levels deep (classic view)**
+**4. Start an interactive session with all data displayed**
 
 ```bash
-lstr -L 2 -g
+lstr interactive -g --icons -s -p
 ```
 
 ## Piping and Shell Interaction

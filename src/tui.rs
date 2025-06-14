@@ -24,6 +24,10 @@ use std::io::{self, Stdout, Write};
 use std::path::PathBuf;
 use std::process::Command;
 
+// Platform-specific import for unix permissions
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 /// An action to be performed after the TUI exits.
 enum PostExitAction {
     None,
@@ -39,6 +43,8 @@ struct FileEntry {
     is_expanded: bool,
     /// The size of the file in bytes, if it is a file.
     size: Option<u64>,
+    /// The formatted permissions string, if requested.
+    permissions: Option<String>,
 }
 
 /// Holds the state of the interactive application.
@@ -51,8 +57,9 @@ struct AppState {
 impl AppState {
     /// Creates a new AppState, performing the initial scan and setup.
     fn new(args: &InteractiveArgs) -> anyhow::Result<Self> {
-        // Pass the 'size' flag down to the scanning function.
-        let mut master_entries = scan_directory(&args.path, args.gitignore, args.all, args.size)?;
+        // Pass all relevant flags down to the scanning function.
+        let mut master_entries =
+            scan_directory(&args.path, args.gitignore, args.all, args.size, args.permissions)?;
 
         if let Some(expand_level) = args.expand_level {
             for entry in &mut master_entries {
@@ -221,6 +228,15 @@ fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs) {
         .map(|entry| {
             let mut spans = Vec::new();
 
+            // Permissions
+            if args.permissions {
+                let perms_str = entry.permissions.as_deref().unwrap_or("----------");
+                spans.push(Span::styled(
+                    format!("{perms_str} "),
+                    Style::default().fg(Color::DarkGray),
+                ));
+            }
+
             // Tree branch and indentation
             let indent_str = "    ".repeat(entry.depth.saturating_sub(1));
             spans.push(Span::raw(indent_str));
@@ -290,6 +306,7 @@ fn scan_directory(
     gitignore: bool,
     all: bool,
     with_size: bool,
+    with_permissions: bool,
 ) -> anyhow::Result<Vec<FileEntry>> {
     let mut entries = Vec::new();
     let mut builder = WalkBuilder::new(path);
@@ -298,10 +315,28 @@ fn scan_directory(
         if entry.depth() == 0 {
             continue;
         }
+
+        let metadata = if with_size || with_permissions { entry.metadata().ok() } else { None };
         let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
 
-        // **FIX:** Only get metadata if the flag is enabled.
-        let size = if with_size && !is_dir { entry.metadata().ok().map(|m| m.len()) } else { None };
+        let size = if with_size && !is_dir { metadata.as_ref().map(|m| m.len()) } else { None };
+
+        let permissions = if with_permissions {
+            metadata.map(|md| {
+                #[cfg(unix)]
+                {
+                    let mode = md.permissions().mode();
+                    let file_type_char = if md.is_dir() { 'd' } else { '-' };
+                    format!("{}{}", file_type_char, utils::format_permissions(mode))
+                }
+                #[cfg(not(unix))]
+                {
+                    "----------".to_string()
+                }
+            })
+        } else {
+            None
+        };
 
         entries.push(FileEntry {
             path: entry.path().to_path_buf(),
@@ -309,6 +344,7 @@ fn scan_directory(
             is_dir,
             is_expanded: false,
             size,
+            permissions,
         });
     }
     Ok(entries)
@@ -351,4 +387,85 @@ fn restore_terminal<B: Backend + Write>(terminal: &mut Terminal<B>) -> anyhow::R
     execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
     terminal.show_cursor()?;
     Ok(())
+}
+
+// Unit tests for the TUI AppState logic
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper function to create a mock AppState for testing.
+    fn setup_test_app_state() -> AppState {
+        let master_entries = vec![
+            FileEntry {
+                path: PathBuf::from("src"),
+                depth: 1,
+                is_dir: true,
+                is_expanded: false,
+                size: None,
+                permissions: Some("drwxr-xr-x".to_string()),
+            },
+            FileEntry {
+                path: PathBuf::from("src/main.rs"),
+                depth: 2,
+                is_dir: false,
+                is_expanded: false,
+                size: Some(1024),
+                permissions: Some("-rw-r--r--".to_string()),
+            },
+            FileEntry {
+                path: PathBuf::from("README.md"),
+                depth: 1,
+                is_dir: false,
+                is_expanded: false,
+                size: Some(512),
+                permissions: Some("-rw-r--r--".to_string()),
+            },
+        ];
+
+        let mut app_state = AppState {
+            master_entries,
+            visible_entries: Vec::new(),
+            list_state: ListState::default(),
+        };
+
+        app_state.regenerate_visible_entries();
+        app_state.list_state.select(Some(0));
+        app_state
+    }
+
+    #[test]
+    fn test_navigation() {
+        let mut app_state = setup_test_app_state();
+        assert_eq!(app_state.list_state.selected(), Some(0));
+        app_state.next();
+        assert_eq!(app_state.list_state.selected(), Some(1));
+        app_state.next();
+        assert_eq!(app_state.list_state.selected(), Some(0));
+        app_state.previous();
+        assert_eq!(app_state.list_state.selected(), Some(1));
+        app_state.previous();
+        assert_eq!(app_state.list_state.selected(), Some(0));
+    }
+
+    #[test]
+    fn test_toggle_directory() {
+        let mut app_state = setup_test_app_state();
+        assert_eq!(app_state.visible_entries.len(), 2);
+        app_state.list_state.select(Some(0));
+        app_state.toggle_selected_directory();
+        assert_eq!(app_state.visible_entries.len(), 3);
+        assert_eq!(app_state.visible_entries[1].path, PathBuf::from("src/main.rs"));
+        app_state.toggle_selected_directory();
+        assert_eq!(app_state.visible_entries.len(), 2);
+    }
+
+    #[test]
+    fn test_get_selected_entry() {
+        let mut app_state = setup_test_app_state();
+        app_state.list_state.select(Some(1));
+        let selected = app_state.get_selected_entry();
+        assert!(selected.is_some());
+        assert_eq!(selected.unwrap().path, PathBuf::from("README.md"));
+    }
 }

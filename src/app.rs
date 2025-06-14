@@ -8,6 +8,7 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
+#[command(override_usage = "lstr [OPTIONS] [PATH]\n    lstr interactive [OPTIONS] [PATH]")]
 pub struct Args {
     /// The subcommand to run. If no subcommand is specified, the classic tree view is displayed.
     #[command(subcommand)]
@@ -44,6 +45,9 @@ pub struct ViewArgs {
     /// Display the size of files.
     #[arg(short = 's', long)]
     pub size: bool,
+    /// Display file permissions.
+    #[arg(short = 'p', long)]
+    pub permissions: bool,
     /// Show all files, including hidden ones.
     #[arg(short = 'a', long, help = "Show all files, including hidden ones")]
     pub all: bool,
@@ -73,6 +77,9 @@ pub struct InteractiveArgs {
     /// Display the size of files.
     #[arg(short = 's', long)]
     pub size: bool,
+    /// Display file permissions.
+    #[arg(short = 'p', long)]
+    pub permissions: bool,
     /// Initial depth to expand the directory tree.
     #[arg(long, value_name = "LEVEL")]
     pub expand_level: Option<usize>,

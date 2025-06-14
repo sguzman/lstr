@@ -1,5 +1,7 @@
 //! Shared utility functions for the lstr application.
 
+// This entire module will only be compiled on Unix-like systems.
+
 /// Formats a size in bytes into a human-readable string using binary prefixes (KiB, MiB).
 pub fn format_size(bytes: u64) -> String {
     const KIB: f64 = 1024.0;
@@ -22,6 +24,24 @@ pub fn format_size(bytes: u64) -> String {
     }
 }
 
+/// Formats a Unix file mode into a human-readable string (e.g., "rwxr-xr-x").
+#[cfg(unix)]
+pub fn format_permissions(mode: u32) -> String {
+    let user_r = if mode & 0o400 != 0 { 'r' } else { '-' };
+    let user_w = if mode & 0o200 != 0 { 'w' } else { '-' };
+    let user_x = if mode & 0o100 != 0 { 'x' } else { '-' };
+    let group_r = if mode & 0o040 != 0 { 'r' } else { '-' };
+    let group_w = if mode & 0o020 != 0 { 'w' } else { '-' };
+    let group_x = if mode & 0o010 != 0 { 'x' } else { '-' };
+    let other_r = if mode & 0o004 != 0 { 'r' } else { '-' };
+    let other_w = if mode & 0o002 != 0 { 'w' } else { '-' };
+    let other_x = if mode & 0o001 != 0 { 'x' } else { '-' };
+    format!(
+        "{}{}{}{}{}{}{}{}{}",
+        user_r, user_w, user_x, group_r, group_w, group_x, other_r, other_w, other_x
+    )
+}
+
 // Unit tests for utility functions
 #[cfg(test)]
 mod tests {
@@ -37,5 +57,19 @@ mod tests {
         assert_eq!(format_size(mib + mib / 2), "1.5 MiB");
         let gib = mib * 1024;
         assert_eq!(format_size(gib), "1.0 GiB");
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_format_permissions() {
+        // -rwxr-xr-x
+        let mode = 0o755;
+        assert_eq!(format_permissions(mode), "rwxr-xr-x");
+        // -rw-r--r--
+        let mode_read = 0o644;
+        assert_eq!(format_permissions(mode_read), "rw-r--r--");
+        // -rwx------
+        let mode_user_only = 0o700;
+        assert_eq!(format_permissions(mode_user_only), "rwx------");
     }
 }
