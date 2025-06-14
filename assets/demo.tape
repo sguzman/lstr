@@ -12,29 +12,37 @@ Set Theme "Catppuccin Frappe"
 Type "lstr -g --icons"
 Sleep 1s
 Enter
-Sleep 4s
+Sleep 5s
 Ctrl+L
 
-# 3. Show the interactive mode, pre-expanded
-Type "lstr interactive -g --icons --expand-level 2"
+# 3. Show the classic view with size and permissions
+Type "lstr -gps"
+Sleep 1s
+Enter
+Sleep 5s
+Ctrl+L
+
+# 4. Show the interactive mode, pre-expanded
+Type "lstr interactive -gs --icons --expand-level 2"
 Sleep 1s
 Enter
 Sleep 2s
 
-# 4. Navigate and interact with the TUI
+# 5. Navigate and interact with the TUI
+Down 7
+Sleep 1s
+Enter
+Sleep 2s
+Enter
+Sleep 1s
 Down 5
-Sleep 1s
-Enter
 Sleep 2s
 Enter
-Sleep 1s
-Down 6
-Sleep 1s
-Enter
-Sleep 2s
+Sleep 5s
 Type ":x"
 Enter
 Sleep 2s
-# 5. Quit the application
+
+# 6. Quit the application
 Type "q"
 Sleep 2s

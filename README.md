@@ -16,6 +16,8 @@ A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by
   - **Minimalist:** Provides essential features without the bloat. The core experience is clean and uncluttered.
   - **Interactive:** An optional TUI mode for fluid, keyboard-driven exploration.
 
+## Features
+
 -   **High-performance:** Scans directories in parallel to be as fast as possible.
 -   **Classic and interactive modes:** Use `lstr` for a classic `tree`-like view, or launch `lstr interactive` for a fully interactive TUI.
 -   **Rich information display (optional):**
@@ -34,70 +36,9 @@ You need the Rust toolchain installed on your system to build **lstr**.
 1.  **Clone the repository:**
 
     ```bash
-    git clone [https://github.com/bgreenwell/lstr.git](https://github.com/bgreenwell/lstr.git)
-    cd lstr
-    ```
-
-2.  **Build and install using Cargo:**
-
-    ```bash
-    # This compiles in release mode and copies the binary to ~/.cargo/bin
-    cargo install --path .
-    ```
-
-    Once published, it can be installed with `cargo install lstr`.
-
-Developer: lstr
-Custom Gem
-
-Show thinking
-Of course. It's a great idea to refactor the documentation for clarity and impact. A clean README.md makes a project much more approachable.
-
-Based on the version of the README.md you provided, here is a revision of the Features and Usage sections to be more consistent and clear, as you requested.
-
-README.md (Revised Sections)
-Markdown
-
-# lstr
-
-[![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
-[![Changelog](https://img.shields.io/badge/Changelog-blue)](CHANGELOG.md)
-
-A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree).
-
-![lstr screenshot](assets/screenshot.png)
-*A clean overview of a project's structure, with specific Nerd Font icons for file types like Rust (``), Cargo configs (``), and licenses (``).*
-
-## Philosophy
-
--   **Fast:** Runs directory scans in parallel by default to maximize speed on modern hardware.
--   **Minimalist:** Provides essential features without the bloat. The core experience is clean and uncluttered.
--   **Authentic:** Adheres to the spirit of classic command-line utilities.
-
-## Features
-
--   **High-Performance:** Scans directories in parallel to be as fast as possible.
--   **Classic and Interactive Modes:** Use `lstr` for a classic `tree`-like view, or launch `lstr interactive` for a fully interactive TUI.
--   **Rich Information Display (Optional):**
-    -   Display file-specific icons with `--icons` (requires a Nerd Font).
-    -   Show file permissions with `-p`.
-    -   Show file sizes with `-s`.
-    -   Git status integration (coming soon).
--   **Smart Filtering:**
-    -   Respects your `.gitignore` files with the `-g` flag.
-    -   Control recursion depth (`-L`) or show only directories (`-d`).
-
-## Installation
-
-You need the Rust toolchain installed on your system to build **lstr**.
-
-1.  **Clone the repository:**
-
-    ```bash
     git clone [https://github.com/your-username/lstr.git](https://github.com/your-username/lstr.git)
     cd lstr
     ```
-   
 
 2.  **Build and install using Cargo:**
 
