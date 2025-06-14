@@ -54,6 +54,9 @@ pub struct ViewArgs {
     /// Respect .gitignore and other standard ignore files.
     #[arg(short = 'g', long)]
     pub gitignore: bool,
+    /// Show git status for files and directories.
+    #[arg(short = 'G', long)]
+    pub git_status: bool,
     /// Display file-specific icons (requires a Nerd Font).
     #[arg(long, help = "Display file-specific icons (requires a Nerd Font)")]
     pub icons: bool,
@@ -71,6 +74,9 @@ pub struct InteractiveArgs {
     /// Respect .gitignore and other standard ignore files.
     #[arg(short = 'g', long)]
     pub gitignore: bool,
+    /// Show git status for files and directories.
+    #[arg(short = 'G', long)]
+    pub git_status: bool,
     /// Display file-specific icons (requires a Nerd Font).
     #[arg(long)]
     pub icons: bool,

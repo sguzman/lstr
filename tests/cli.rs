@@ -122,3 +122,45 @@ fn test_permissions_flag() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_git_status_flag() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = tempdir()?;
+    let temp_path = temp_dir.path();
+
+    // 1. Initialize a git repository
+    Command::new("git").arg("init").current_dir(temp_path).output()?;
+    Command::new("git")
+        .args(["config", "user.email", "test@example.com"])
+        .current_dir(temp_path)
+        .output()?;
+    Command::new("git")
+        .args(["config", "user.name", "Test User"])
+        .current_dir(temp_path)
+        .output()?;
+
+    // 2. Create and commit a file
+    fs::write(temp_path.join("committed.txt"), "initial content")?;
+    Command::new("git").args(["add", "committed.txt"]).current_dir(temp_path).output()?;
+    Command::new("git").args(["commit", "-m", "initial commit"]).current_dir(temp_path).output()?;
+
+    // 3. Create files with various statuses
+    fs::write(temp_path.join("committed.txt"), "modified content")?; // Modified
+    fs::write(temp_path.join("staged.txt"), "staged")?; // New, staged
+    Command::new("git").args(["add", "staged.txt"]).current_dir(temp_path).output()?;
+    fs::write(temp_path.join("untracked.txt"), "untracked")?; // Untracked
+
+    // 4. Run lstr with the git flag
+    let mut cmd = Command::cargo_bin("lstr")?;
+    cmd.arg("-G").arg("-a").arg(temp_path);
+
+    // 5. Assert the output contains the correct status indicators
+    // Use flexible matching to account for tree structure characters.
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::is_match(r"M\s+.*committed\.txt").unwrap())
+        .stdout(predicate::str::is_match(r"A\s+.*staged\.txt").unwrap())
+        .stdout(predicate::str::is_match(r"\?\s+.*untracked\.txt").unwrap());
+
+    Ok(())
+}

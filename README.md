@@ -4,12 +4,10 @@
 [![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-
 A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree), with a powerful interactive mode.
 
 ![](assets/lstr-demo.gif)
 *An interactive overview of **lstr**'s project structure... using **lstr**.*
-
 ## Philosophy
 
   - **Fast:** Runs directory scans in parallel by default to maximize speed on modern hardware.
@@ -18,54 +16,53 @@ A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by
 
 ## Features
 
--   **High-performance:** Scans directories in parallel to be as fast as possible.
--   **Classic and interactive modes:** Use `lstr` for a classic `tree`-like view, or launch `lstr interactive` for a fully interactive TUI.
--   **Rich information display (optional):**
-    -   Display file-specific icons with `--icons` (requires a Nerd Font).
-    -   Show file permissions with `-p`.
-    -   Show file sizes with `-s`.
-    -   Git status integration (coming soon).
--   **Smart filtering:**
-    -   Respects your `.gitignore` files with the `-g` flag.
-    -   Control recursion depth (`-L`) or show only directories (`-d`).
+  - **High-performance:** Scans directories in parallel to be as fast as possible.
+  - **Classic and interactive modes:** Use `lstr` for a classic `tree`-like view, or launch `lstr interactive` for a fully interactive TUI.
+  - **Rich information display (optional):**
+      - Display file-specific icons with `--icons` (requires a Nerd Font).
+      - Show file permissions with `-p`.
+      - Show file sizes with `-s`.
+      - **Git Integration:** Show file statuses (`Modified`, `New`, `Untracked`, etc.) directly in the tree with the `-G` flag.
+  - **Smart filtering:**
+      - Respects your `.gitignore` files with the `-g` flag.
+      - Control recursion depth (`-L`) or show only directories (`-d`).
 
 ## Installation
 
 You need the Rust toolchain installed on your system to build **lstr**.
 
 1.  **Clone the repository:**
-
     ```bash
-    git clone [https://github.com/your-username/lstr.git](https://github.com/your-username/lstr.git)
+    git clone https://github.com/bgreenwell/lstr.git
     cd lstr
     ```
-
 2.  **Build and install using Cargo:**
-
     ```bash
     # This compiles in release mode and copies the binary to ~/.cargo/bin
     cargo install --path .
     ```
-   
+
 ## Usage
 
 ```bash
-lstr [OPTIONS] [PATH]  # or [PATH] [OPTIONS]
-lstr interactive [OPTIONS] [PATH]  # or [PATH] [OPTIONS]
+lstr [OPTIONS] [PATH]
+lstr interactive [OPTIONS] [PATH]
 ```
+
 Note that `PATH` defaults to the current directory (`.`) if not specified.
 
-| Option | Description |
-| :--- | :--- |
-| `-a`, `--all` | List all files and directories, including hidden ones. |
-| `--color <WHEN>` | Specify when to use color output (`always`, `auto`, `never`). |
-| `-d`, `--dirs-only`| List directories only, ignoring all files. |
-| `-g`, `--gitignore`| Respect `.gitignore` and other standard ignore files. |
-| `--icons` | Display file-specific icons; requires a [Nerd Font](https://www.nerdfonts.com/). |
-| `-L`, `--level <LEVEL>`| Maximum depth to descend. |
-| `-p`, `--permissions`| Display file permissions (Unix-like systems only). |
-| `-s`, `--size` | Display the size of files. |
-| `--expand-level <LEVEL>`| **Interactive mode only:** Initial depth to expand the interactive tree. |
+| Option                 | Description                                                                 |
+| :--------------------- | :-------------------------------------------------------------------------- |
+| `-a`, `--all`          | List all files and directories, including hidden ones.                      |
+| `--color <WHEN>`       | Specify when to use color output (`always`, `auto`, `never`).               |
+| `-d`, `--dirs-only`    | List directories only, ignoring all files.                                  |
+| `-g`, `--gitignore`    | Respect `.gitignore` and other standard ignore files.                       |
+| `-G`, `--git-status`   | Show git status for files and directories.                                  |
+| `--icons`              | Display file-specific icons; requires a [Nerd Font](https://www.nerdfonts.com/). |
+| `-L`, `--level <LEVEL>`| Maximum depth to descend.                                                   |
+| `-p`, `--permissions`  | Display file permissions (Unix-like systems only).                          |
+| `-s`, `--size`         | Display the size of files.                                                  |
+| `--expand-level <LEVEL>`| **Interactive mode only:** Initial depth to expand the interactive tree.      |
 
 -----
 
@@ -75,12 +72,12 @@ Launch the TUI with `lstr interactive [OPTIONS] [PATH]`.
 
 ### Keyboard controls
 
-| Key(s) | Action |
-| :--- | :--- |
-| `↑` / `k` | Move selection up. |
-| `↓` / `j` | Move selection down. |
-| `Enter` | **Context-aware action:**<br/>- If on a file: Open it in the default editor (`$EDITOR`).<br/>- If on a directory: Toggle expand/collapse. |
-| `q` / `Esc` | Quit the application normally. |
+| Key(s)  | Action                                                                                                                                      |
+| :------ | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| `↑` / `k` | Move selection up.                                                                                                                          |
+| `↓` / `j` | Move selection down.                                                                                                                        |
+| `Enter` | **Context-aware action:**\<br/\>- If on a file: Open it in the default editor (`$EDITOR`).\<br/\>- If on a directory: Toggle expand/collapse. |
+| `q` / `Esc` | Quit the application normally.                                                                                                              |
 
 ## Examples
 
@@ -88,7 +85,7 @@ Launch the TUI with `lstr interactive [OPTIONS] [PATH]`.
 
 ```bash
 lstr
-````
+```
 
 **2. Explore a project interactively, ignoring gitignored files**
 
@@ -102,10 +99,16 @@ lstr interactive -g --icons
 lstr -sp
 ```
 
-**4. Start an interactive session with all data displayed**
+**4. See the git status of all files in a project**
 
 ```bash
-lstr interactive -g --icons -s -p
+lstr -aG
+```
+
+**5. Start an interactive session with all data displayed**
+
+```bash
+lstr interactive -gG --icons -s -p
 ```
 
 ## Piping and Shell Interaction

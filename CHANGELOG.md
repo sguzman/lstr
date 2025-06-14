@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.2] - 2025-06-07
+## [0.x.y] - 2025-06-14
 
 ### Added
 
+-   Git integration to display file statuses with a new `-G, --git-status` flag.
+    -   Shows status indicators for modified (`M`), new (`A`), untracked (`?`), and more.
+    -   Available in both classic `view` and `interactive` modes.
 -   Added an optional `-s, --size` flag to display file sizes in both classic and interactive modes.
 -   Added an optional `-p, --permissions` flag to display file permissions in both classic and interactive modes (**Unix-like systems only**).
 -   **Interactive Mode**: A new `interactive` subcommand that launches a terminal-based UI.

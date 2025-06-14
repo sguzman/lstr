@@ -16,6 +16,7 @@ anyhow = "1.0"
 colored = "2.1.0"
 clap = { version = "4.5.7", features = ["derive"] }
 crossterm = "0.27.0"
+git2 = "0.19.0"
 ignore = "0.4.22"
 ratatui = "0.27.0"
 rayon = "1.10.0"
