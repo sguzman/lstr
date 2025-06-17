@@ -5,7 +5,7 @@ use crate::git;
 use crate::icons;
 use crate::utils;
 use colored::{control, Colorize};
-use ignore::{WalkBuilder, WalkState};
+use ignore::{self, WalkBuilder, WalkState};
 use std::fs;
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -17,13 +17,10 @@ use std::os::unix::fs::PermissionsExt;
 
 /// Executes the classic directory tree view.
 pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
-    // Check if the path is a directory BEFORE trying to canonicalize it.
     if !args.path.is_dir() {
         anyhow::bail!("'{}' is not a directory.", args.path.display());
     }
-
-    // Now that we know the path is valid, canonicalize it to resolve symlinks.
-    let root_path = Arc::new(fs::canonicalize(&args.path)?);
+    let canonical_root = Arc::new(fs::canonicalize(&args.path)?);
 
     match args.color {
         crate::app::ColorChoice::Always => control::set_override(true),
@@ -31,14 +28,18 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
         crate::app::ColorChoice::Auto => {}
     }
 
-    if writeln!(io::stdout(), "{}", root_path.display().to_string().blue().bold()).is_err() {
-        return Ok(()); // Exit silently on broken pipe
+    if writeln!(io::stdout(), "{}", args.path.display().to_string().blue().bold()).is_err() {
+        return Ok(());
     }
 
-    let git_repo_status = if args.git_status { git::load_status(&root_path)? } else { None };
+    let git_repo_status = if args.git_status { git::load_status(&canonical_root)? } else { None };
 
-    let mut builder = WalkBuilder::new(root_path.as_ref());
-    builder.hidden(!args.all).git_ignore(args.gitignore).max_depth(args.level);
+    // The WalkBuilder MUST be initialized with the original, non-canonicalized path.
+    let mut builder = WalkBuilder::new(&args.path);
+    builder.hidden(!args.all).git_ignore(args.gitignore);
+    if let Some(level) = args.level {
+        builder.max_depth(Some(level));
+    }
 
     let walker = builder.build_parallel();
     let dir_count = Arc::new(AtomicU32::new(0));
@@ -48,13 +49,12 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
         let dir_count = Arc::clone(&dir_count);
         let file_count = Arc::clone(&file_count);
         let git_repo_status = git_repo_status.clone();
-        let root_path = Arc::clone(&root_path);
 
+        // This is the factory closure. It moves the data into the worker closure.
         move || {
-            let dir_count = Arc::clone(&dir_count);
-            let file_count = Arc::clone(&file_count);
+            let dir_count = dir_count.clone();
+            let file_count = file_count.clone();
             let git_repo_status = git_repo_status.clone();
-            let root_path = Arc::clone(&root_path);
 
             Box::new(move |result| {
                 let status_cache = git_repo_status.as_ref().map(|s| &s.cache);
@@ -68,7 +68,7 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
                     }
                 };
 
-                if entry.path() == root_path.as_ref() {
+                if entry.depth() == 0 {
                     return WalkState::Continue;
                 }
 
@@ -78,25 +78,29 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
                 }
 
                 let git_status_str = if let (Some(cache), Some(root)) = (status_cache, repo_root) {
-                    if let Ok(relative_path) = entry.path().strip_prefix(root) {
-                        cache
-                            .get(relative_path)
-                            .map(|s| {
-                                let status_char = s.get_char();
-                                let color = match s {
-                                    git::FileStatus::New | git::FileStatus::Renamed => {
-                                        colored::Color::Green
-                                    }
-                                    git::FileStatus::Modified | git::FileStatus::Typechange => {
-                                        colored::Color::Yellow
-                                    }
-                                    git::FileStatus::Deleted => colored::Color::Red,
-                                    git::FileStatus::Conflicted => colored::Color::BrightRed,
-                                    git::FileStatus::Untracked => colored::Color::Magenta,
-                                };
-                                format!("{} ", status_char).color(color).to_string()
-                            })
-                            .unwrap_or_else(|| "  ".to_string())
+                    if let Ok(canonical_entry) = entry.path().canonicalize() {
+                        if let Ok(relative_path) = canonical_entry.strip_prefix(root) {
+                            cache
+                                .get(relative_path)
+                                .map(|s| {
+                                    let status_char = s.get_char();
+                                    let color = match s {
+                                        git::FileStatus::New | git::FileStatus::Renamed => {
+                                            colored::Color::Green
+                                        }
+                                        git::FileStatus::Modified | git::FileStatus::Typechange => {
+                                            colored::Color::Yellow
+                                        }
+                                        git::FileStatus::Deleted => colored::Color::Red,
+                                        git::FileStatus::Conflicted => colored::Color::BrightRed,
+                                        git::FileStatus::Untracked => colored::Color::Magenta,
+                                    };
+                                    format!("{} ", status_char).color(color).to_string()
+                                })
+                                .unwrap_or_else(|| "  ".to_string())
+                        } else {
+                            "  ".to_string()
+                        }
                     } else {
                         "  ".to_string()
                     }
@@ -106,7 +110,6 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
 
                 let metadata =
                     if args.size || args.permissions { entry.metadata().ok() } else { None };
-
                 let permissions_str = if args.permissions {
                     let mut perms_string = "----------".to_string();
                     if let Some(md) = &metadata {
@@ -125,14 +128,12 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
 
                 let indent = "    ".repeat(entry.depth().saturating_sub(1));
                 let name = entry.file_name().to_string_lossy();
-
                 let icon_str = if args.icons {
                     let (icon, color) = icons::get_icon_for_path(entry.path(), is_dir);
                     format!("{} ", icon.color(color))
                 } else {
                     String::new()
                 };
-
                 let size_str = if args.size && !is_dir {
                     metadata
                         .as_ref()

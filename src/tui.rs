@@ -8,7 +8,9 @@ use crate::git::{self, StatusCache};
 use crate::icons;
 use crate::utils;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{
+        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
+    },
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -22,7 +24,7 @@ use ratatui::{
 };
 use std::env;
 use std::fs;
-use std::io::{self, Stdout, Write};
+use std::io::{stderr, stdout, IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -30,13 +32,10 @@ use std::process::Command;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-// ... (rest of TUI file is unchanged, no new bugs were present here)
-// The existing TUI code should work correctly with the updated git.rs
-
-// ... (pasting the rest of the file for completeness)
 enum PostExitAction {
     None,
     OpenFile(PathBuf),
+    PrintPath(PathBuf),
 }
 
 #[derive(Debug, Clone)]
@@ -152,30 +151,33 @@ impl AppState {
 }
 
 pub fn run(args: &InteractiveArgs) -> anyhow::Result<()> {
-    let root_path = match fs::canonicalize(&args.path) {
-        Ok(path) => path,
-        Err(e) => anyhow::bail!("Invalid path '{}': {}", args.path.display(), e),
-    };
-
-    if !root_path.is_dir() {
+    if !args.path.is_dir() {
         anyhow::bail!("'{}' is not a directory.", args.path.display());
     }
+    let root_path = fs::canonicalize(&args.path)?;
 
     let mut app_state = AppState::new(args, &root_path)?;
     let mut terminal = setup_terminal()?;
     let post_exit_action = run_app(&mut terminal, &mut app_state, args)?;
     restore_terminal(&mut terminal)?;
 
-    if let PostExitAction::OpenFile(path) = post_exit_action {
-        let editor = env::var("EDITOR").unwrap_or_else(|_| {
-            if cfg!(windows) {
-                "notepad".to_string()
-            } else {
-                "vim".to_string()
-            }
-        });
-        Command::new(editor).arg(path).status()?;
+    match post_exit_action {
+        PostExitAction::OpenFile(path) => {
+            let editor = env::var("EDITOR").unwrap_or_else(|_| {
+                if cfg!(windows) {
+                    "notepad".to_string()
+                } else {
+                    "vim".to_string()
+                }
+            });
+            Command::new(editor).arg(path).status()?;
+        }
+        PostExitAction::PrintPath(path) => {
+            println!("{}", path.display());
+        }
+        PostExitAction::None => {}
     }
+
     Ok(())
 }
 
@@ -186,12 +188,23 @@ fn run_app<B: Backend + Write>(
 ) -> anyhow::Result<PostExitAction> {
     loop {
         terminal.draw(|f| ui(f, app_state, args))?;
+
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') | KeyCode::Esc => break Ok(PostExitAction::None),
-                KeyCode::Down | KeyCode::Char('j') => app_state.next(),
-                KeyCode::Up | KeyCode::Char('k') => app_state.previous(),
-                KeyCode::Enter => {
+            match key {
+                KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::CONTROL, .. } => {
+                    if let Some(entry) = app_state.get_selected_entry() {
+                        break Ok(PostExitAction::PrintPath(entry.path.clone()));
+                    }
+                }
+                KeyEvent { code: KeyCode::Char('q'), .. } | KeyEvent { code: KeyCode::Esc, .. } => {
+                    break Ok(PostExitAction::None);
+                }
+                KeyEvent { code: KeyCode::Down, .. }
+                | KeyEvent { code: KeyCode::Char('j'), .. } => app_state.next(),
+                KeyEvent { code: KeyCode::Up, .. } | KeyEvent { code: KeyCode::Char('k'), .. } => {
+                    app_state.previous()
+                }
+                KeyEvent { code: KeyCode::Enter, .. } => {
                     if let Some(entry) = app_state.get_selected_entry() {
                         if entry.is_dir {
                             app_state.toggle_selected_directory();
@@ -291,7 +304,6 @@ fn scan_directory(
     let mut entries = Vec::new();
     let mut builder = WalkBuilder::new(path);
     builder.hidden(!args.all).git_ignore(args.gitignore);
-
     for result in builder.build().flatten() {
         if result.path() == path {
             continue;
@@ -355,11 +367,17 @@ fn map_color(c: colored::Color) -> Color {
     }
 }
 
-fn setup_terminal() -> anyhow::Result<Terminal<CrosstermBackend<Stdout>>> {
-    let mut stdout = io::stdout();
+// --- Terminal setup and restore functions ---
+type TerminalWriter = CrosstermBackend<Box<dyn Write + Send>>;
+
+fn setup_terminal() -> anyhow::Result<Terminal<TerminalWriter>> {
+    // If stdout is a pipe, draw the TUI to stderr, otherwise use stdout.
+    let writer: Box<dyn Write + Send> =
+        if stdout().is_terminal() { Box::new(stdout()) } else { Box::new(stderr()) };
     enable_raw_mode()?;
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
+    let mut writer_mut = writer;
+    execute!(writer_mut, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(writer_mut);
     Terminal::new(backend).map_err(anyhow::Error::from)
 }
 
@@ -370,6 +388,7 @@ fn restore_terminal<B: Backend + Write>(terminal: &mut Terminal<B>) -> anyhow::R
     Ok(())
 }
 
+// ... (Unit tests remain the same)
 #[cfg(test)]
 mod tests {
     use super::*;
