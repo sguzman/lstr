@@ -317,11 +317,11 @@ fn scan_directory(
         };
         let size = if args.size && !is_dir { metadata.as_ref().map(|m| m.len()) } else { None };
         let permissions = if args.permissions {
-            metadata.map(|md| {
+            metadata.map(|_md| {
                 #[cfg(unix)]
                 {
-                    let mode = md.permissions().mode();
-                    let file_type_char = if md.is_dir() { 'd' } else { '-' };
+                    let mode = _md.permissions().mode();
+                    let file_type_char = if _md.is_dir() { 'd' } else { '-' };
                     format!("{}{}", file_type_char, utils::format_permissions(mode))
                 }
                 #[cfg(not(unix))]

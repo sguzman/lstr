@@ -110,18 +110,25 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
 
                 let metadata =
                     if args.size || args.permissions { entry.metadata().ok() } else { None };
+
                 let permissions_str = if args.permissions {
-                    let mut perms_string = "----------".to_string();
-                    if let Some(md) = &metadata {
+                    let perms = if let Some(md) = &metadata {
                         #[cfg(unix)]
                         {
                             let mode = md.permissions().mode();
                             let file_type_char = if md.is_dir() { 'd' } else { '-' };
-                            perms_string =
-                                format!("{}{}", file_type_char, utils::format_permissions(mode));
+                            format!("{}{}", file_type_char, utils::format_permissions(mode))
                         }
-                    }
-                    format!("{} ", perms_string)
+                        #[cfg(not(unix))]
+                        {
+                            // Explicitly ignore md on non-unix platforms to satisfy clippy
+                            let _ = md;
+                            "----------".to_string()
+                        }
+                    } else {
+                        "----------".to_string()
+                    };
+                    format!("{} ", perms)
                 } else {
                     String::new()
                 };

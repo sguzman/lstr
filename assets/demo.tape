@@ -6,7 +6,7 @@ Output "assets/lstr-demo.gif"
 #Set Height 600
 Set Width 1000
 Set Height 618
-Set FontSize 18
+Set FontSize 16
 Set TypingSpeed 65ms
 Set Theme "Catppuccin Frappe"
 
