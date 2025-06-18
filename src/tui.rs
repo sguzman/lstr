@@ -7,14 +7,14 @@ use crate::app::InteractiveArgs;
 use crate::git::{self, StatusCache};
 use crate::icons;
 use crate::utils;
-use crossterm::{
+use ignore::WalkBuilder;
+use ratatui::crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
     },
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ignore::WalkBuilder;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Color, Modifier, Style},
