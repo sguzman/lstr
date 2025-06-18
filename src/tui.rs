@@ -388,7 +388,7 @@ fn restore_terminal<B: Backend + Write>(terminal: &mut Terminal<B>) -> anyhow::R
     Ok(())
 }
 
-// ... (Unit tests remain the same)
+// Unit tests
 #[cfg(test)]
 mod tests {
     use super::*;
