@@ -29,7 +29,7 @@ A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by
 
 ## Installation
 
-You need the Rust toolchain installed on your system to build `lstr`.
+You need the Rust toolchain installed on your system to build `lstr`. Or use `nix develop` command to create development environment.
 
 1.  **Clone the repository:**
     ```bash
