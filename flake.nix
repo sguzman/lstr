@@ -22,7 +22,6 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             pkg-config
-            openssl
           ];
           packages = [
             (fenix.packages.${system}.stable.withComponents [
