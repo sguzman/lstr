@@ -7,7 +7,7 @@ use crate::app::InteractiveArgs;
 use crate::git::{self, StatusCache};
 use crate::icons;
 use crate::utils;
-use crossterm::{
+use ratatui::crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
     },

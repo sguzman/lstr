@@ -646,7 +646,6 @@ dependencies = [
  "assert_cmd",
  "clap",
  "colored",
- "crossterm",
  "git2",
  "ignore",
  "predicates",
