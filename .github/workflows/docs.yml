@@ -38,7 +38,7 @@ jobs:
 
       # NEW STEP: Create the redirect page
       - name: Create redirect page
-        run: echo '<meta http-equiv="refresh" content="0; url=rjot">' > target/doc/index.html
+        run: echo '<meta http-equiv="refresh" content="0; url=lstr">' > target/doc/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

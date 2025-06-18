@@ -5,29 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.x.y] - 2025-06-14
+## [0.2.0] - 2025-06-17
 
 ### Added
 
--   **Shell integration:** In interactive mode, pressing `Ctrl+s` now quits the application and prints the selected path to standard output, allowing `lstr` to be used as a file picker for other shell commands.
--   **Git integration:** To display file statuses, use the new `-G, --git-status` flag.
-    -   Shows status indicators for modified (`M`), new (`A`), untracked (`?`), and more.
-    -   Available in both classic `view` and `interactive` modes.
--   Added an optional `-s, --size` flag to display file sizes in both classic and interactive modes.
--   Added an optional `-p, --permissions` flag to display file permissions in both classic and interactive modes (**Unix-like systems only**).
--   **Interactive Mode**: A new `interactive` subcommand that launches a terminal-based UI.
-  -   Keyboard-driven navigation of the file tree (`Up`/`Down`, `j`/`k`).
-  -   Directory expansion and collapsing with the `Enter` key.
-  -   Ability to open selected files in the default editor (`$EDITOR`) by pressing `Enter`.
-  -   Shell integration support via `Ctrl+s` to quit and print the selected path.
-  -   Support for `-g` (`--gitignore`), `-a` (`--all`), and `--icons` flags in interactive mode.
-  -   A new `--expand-level` flag to set the initial expansion depth in interactive mode.
-- Support [Nerd Fonts](https://www.nerdfonts.com/) to display file-specific icons via a new `--icons` argument.
-- Directory names are now displayed in bold for better visibility.
+-   **Interactive Mode:** A new `interactive` subcommand that launches a terminal-based UI.
+    -   Keyboard-driven navigation (`Up`/`Down`, `j`/`k`).
+    -   Directory expansion and collapsing with `Enter`.
+    -   Ability to open selected files in the default editor (`$EDITOR`).
+-   **Git Integration:** A new `-G, --git-status` flag displays file statuses (`M`, `A`, `?`, etc.) in both classic and interactive modes.
+-   **Shell Integration:** In interactive mode, pressing `Ctrl+s` now quits and prints the selected path to `stdout`, allowing `lstr` to be used as a file picker for other shell commands.
+-   **Rich Information Display:**
+    -   Added `--icons` flag to display file-specific icons (requires a Nerd Font).
+    -   Added `-s, --size` flag to display file sizes.
+    -   Added `-p, --permissions` flag to display file permissions (Unix-like systems only).
+
+### Fixed
+
+-   Resolved an issue where the `--gitignore` (`-g`) flag would fail to ignore files in certain environments.
+-   Fixed a critical bug where the interactive TUI would hang and produce garbled output when piped to another command.
 
 ## [0.1.1] - 2025-06-06
 
 ### Added
+
 - Initial release of `lstr`.
 - Core recursive directory tree walking and printing functionality.
 - Colorized output for directories, configurable with the `--color` flag (`always`, `auto`, `never`).
