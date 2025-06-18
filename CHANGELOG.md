@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--   Git integration to display file statuses with a new `-G, --git-status` flag.
+-   **Shell integration:** In interactive mode, pressing `Ctrl+s` now quits the application and prints the selected path to standard output, allowing `lstr` to be used as a file picker for other shell commands.
+-   **Git integration:** To display file statuses, use the new `-G, --git-status` flag.
     -   Shows status indicators for modified (`M`), new (`A`), untracked (`?`), and more.
     -   Available in both classic `view` and `interactive` modes.
 -   Added an optional `-s, --size` flag to display file sizes in both classic and interactive modes.
