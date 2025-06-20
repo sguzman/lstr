@@ -5,11 +5,9 @@ use crate::git;
 use crate::icons;
 use crate::utils;
 use colored::{control, Colorize};
-use ignore::{self, WalkBuilder, WalkState};
+use ignore::{self, WalkBuilder};
 use std::fs;
 use std::io::{self, Write};
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
 
 // Platform-specific import for unix permissions
 #[cfg(unix)]
@@ -20,7 +18,8 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
     if !args.path.is_dir() {
         anyhow::bail!("'{}' is not a directory.", args.path.display());
     }
-    let canonical_root = Arc::new(fs::canonicalize(&args.path)?);
+
+    let canonical_root = fs::canonicalize(&args.path)?;
 
     match args.color {
         crate::app::ColorChoice::Always => control::set_override(true),
@@ -33,166 +32,142 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
     }
 
     let git_repo_status = if args.git_status { git::load_status(&canonical_root)? } else { None };
+    let status_cache = git_repo_status.as_ref().map(|s| &s.cache);
+    let repo_root = git_repo_status.as_ref().map(|s| &s.root);
 
-    // The WalkBuilder MUST be initialized with the original, non-canonicalized path.
     let mut builder = WalkBuilder::new(&args.path);
     builder.hidden(!args.all).git_ignore(args.gitignore);
     if let Some(level) = args.level {
         builder.max_depth(Some(level));
     }
 
-    let walker = builder.build_parallel();
-    let dir_count = Arc::new(AtomicU32::new(0));
-    let file_count = Arc::new(AtomicU32::new(0));
+    let mut dir_count = 0;
+    let mut file_count = 0;
 
-    walker.run({
-        let dir_count = Arc::clone(&dir_count);
-        let file_count = Arc::clone(&file_count);
-        let git_repo_status = git_repo_status.clone();
+    // Use the serial walker for correctness and reliability.
+    for result in builder.build() {
+        let entry = match result {
+            Ok(entry) => entry,
+            Err(err) => {
+                eprintln!("lstr: ERROR: {}", err);
+                continue;
+            }
+        };
 
-        // This is the factory closure. It moves the data into the worker closure.
-        move || {
-            let dir_count = dir_count.clone();
-            let file_count = file_count.clone();
-            let git_repo_status = git_repo_status.clone();
-
-            Box::new(move |result| {
-                let status_cache = git_repo_status.as_ref().map(|s| &s.cache);
-                let repo_root = git_repo_status.as_ref().map(|s| &s.root);
-
-                let entry = match result {
-                    Ok(entry) => entry,
-                    Err(err) => {
-                        eprintln!("lstr: ERROR: {}", err);
-                        return WalkState::Continue;
-                    }
-                };
-
-                if entry.depth() == 0 {
-                    return WalkState::Continue;
-                }
-
-                let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
-                if args.dirs_only && !is_dir {
-                    return WalkState::Continue;
-                }
-
-                let git_status_str = if let (Some(cache), Some(root)) = (status_cache, repo_root) {
-                    if let Ok(canonical_entry) = entry.path().canonicalize() {
-                        if let Ok(relative_path) = canonical_entry.strip_prefix(root) {
-                            cache
-                                .get(relative_path)
-                                .map(|s| {
-                                    let status_char = s.get_char();
-                                    let color = match s {
-                                        git::FileStatus::New | git::FileStatus::Renamed => {
-                                            colored::Color::Green
-                                        }
-                                        git::FileStatus::Modified | git::FileStatus::Typechange => {
-                                            colored::Color::Yellow
-                                        }
-                                        git::FileStatus::Deleted => colored::Color::Red,
-                                        git::FileStatus::Conflicted => colored::Color::BrightRed,
-                                        git::FileStatus::Untracked => colored::Color::Magenta,
-                                    };
-                                    format!("{} ", status_char).color(color).to_string()
-                                })
-                                .unwrap_or_else(|| "  ".to_string())
-                        } else {
-                            "  ".to_string()
-                        }
-                    } else {
-                        "  ".to_string()
-                    }
-                } else {
-                    String::new()
-                };
-
-                let metadata =
-                    if args.size || args.permissions { entry.metadata().ok() } else { None };
-
-                let permissions_str = if args.permissions {
-                    let perms = if let Some(md) = &metadata {
-                        #[cfg(unix)]
-                        {
-                            let mode = md.permissions().mode();
-                            let file_type_char = if md.is_dir() { 'd' } else { '-' };
-                            format!("{}{}", file_type_char, utils::format_permissions(mode))
-                        }
-                        #[cfg(not(unix))]
-                        {
-                            // Explicitly ignore md on non-unix platforms to satisfy clippy
-                            let _ = md;
-                            "----------".to_string()
-                        }
-                    } else {
-                        "----------".to_string()
-                    };
-                    format!("{} ", perms)
-                } else {
-                    String::new()
-                };
-
-                let indent = "    ".repeat(entry.depth().saturating_sub(1));
-                let name = entry.file_name().to_string_lossy();
-                let icon_str = if args.icons {
-                    let (icon, color) = icons::get_icon_for_path(entry.path(), is_dir);
-                    format!("{} ", icon.color(color))
-                } else {
-                    String::new()
-                };
-                let size_str = if args.size && !is_dir {
-                    metadata
-                        .as_ref()
-                        .map(|m| format!(" ({})", utils::format_size(m.len())))
-                        .unwrap_or_default()
-                } else {
-                    String::new()
-                };
-
-                if is_dir {
-                    dir_count.fetch_add(1, Ordering::Relaxed);
-                    if writeln!(
-                        io::stdout(),
-                        "{}{}{}└── {}{}",
-                        git_status_str,
-                        permissions_str.dimmed(),
-                        indent,
-                        icon_str,
-                        name.blue().bold()
-                    )
-                    .is_err()
-                    {
-                        return WalkState::Quit;
-                    }
-                } else {
-                    file_count.fetch_add(1, Ordering::Relaxed);
-                    if writeln!(
-                        io::stdout(),
-                        "{}{}{}└── {}{}{}",
-                        git_status_str,
-                        permissions_str.dimmed(),
-                        indent,
-                        icon_str,
-                        name,
-                        size_str.dimmed()
-                    )
-                    .is_err()
-                    {
-                        return WalkState::Quit;
-                    }
-                }
-
-                WalkState::Continue
-            })
+        if entry.depth() == 0 {
+            continue;
         }
-    });
 
-    let summary = format!(
-        "\n{} directories, {} files",
-        dir_count.load(Ordering::Relaxed),
-        file_count.load(Ordering::Relaxed)
-    );
+        let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
+        if args.dirs_only && !is_dir {
+            continue;
+        }
+
+        let git_status_str = if let (Some(cache), Some(root)) = (status_cache, repo_root) {
+            if let Ok(canonical_entry) = entry.path().canonicalize() {
+                if let Ok(relative_path) = canonical_entry.strip_prefix(root) {
+                    cache
+                        .get(relative_path)
+                        .map(|s| {
+                            let status_char = s.get_char();
+                            let color = match s {
+                                git::FileStatus::New | git::FileStatus::Renamed => {
+                                    colored::Color::Green
+                                }
+                                git::FileStatus::Modified | git::FileStatus::Typechange => {
+                                    colored::Color::Yellow
+                                }
+                                git::FileStatus::Deleted => colored::Color::Red,
+                                git::FileStatus::Conflicted => colored::Color::BrightRed,
+                                git::FileStatus::Untracked => colored::Color::Magenta,
+                            };
+                            format!("{} ", status_char).color(color).to_string()
+                        })
+                        .unwrap_or_else(|| "  ".to_string())
+                } else {
+                    "  ".to_string()
+                }
+            } else {
+                "  ".to_string()
+            }
+        } else {
+            String::new()
+        };
+
+        let metadata = if args.size || args.permissions { entry.metadata().ok() } else { None };
+        let permissions_str = if args.permissions {
+            let perms = if let Some(md) = &metadata {
+                #[cfg(unix)]
+                {
+                    let mode = md.permissions().mode();
+                    let file_type_char = if md.is_dir() { 'd' } else { '-' };
+                    format!("{}{}", file_type_char, utils::format_permissions(mode))
+                }
+                #[cfg(not(unix))]
+                {
+                    let _ = md;
+                    "----------".to_string()
+                }
+            } else {
+                "----------".to_string()
+            };
+            format!("{} ", perms)
+        } else {
+            String::new()
+        };
+
+        let indent = "    ".repeat(entry.depth().saturating_sub(1));
+        let name = entry.file_name().to_string_lossy();
+        let icon_str = if args.icons {
+            let (icon, color) = icons::get_icon_for_path(entry.path(), is_dir);
+            format!("{} ", icon.color(color))
+        } else {
+            String::new()
+        };
+        let size_str = if args.size && !is_dir {
+            metadata
+                .as_ref()
+                .map(|m| format!(" ({})", utils::format_size(m.len())))
+                .unwrap_or_default()
+        } else {
+            String::new()
+        };
+
+        if is_dir {
+            dir_count += 1;
+            if writeln!(
+                io::stdout(),
+                "{}{}{}└── {}{}",
+                git_status_str,
+                permissions_str.dimmed(),
+                indent,
+                icon_str,
+                name.blue().bold()
+            )
+            .is_err()
+            {
+                break;
+            }
+        } else {
+            file_count += 1;
+            if writeln!(
+                io::stdout(),
+                "{}{}{}└── {}{}{}",
+                git_status_str,
+                permissions_str.dimmed(),
+                indent,
+                icon_str,
+                name,
+                size_str.dimmed()
+            )
+            .is_err()
+            {
+                break;
+            }
+        }
+    }
+
+    let summary = format!("\n{} directories, {} files", dir_count, file_count);
     _ = writeln!(io::stdout(), "{}", summary);
 
     Ok(())

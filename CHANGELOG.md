@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-XY-XY
+
+### Added
+
+- Added a Nix flake configuration (`flake.nix`) to provide a consistent and reproducible development environment for contributors. ([PR #10](https://github.com/bgreenwell/lstr/pull/10))
+
+### Fixed
+
+- Fixed a critical issue where the classic `view` mode could produce scrambled and incorrect directory trees on certain systems, particularly on Windows. The directory walker for this mode was changed to a serial implementation to guarantee a consistent and correct output order in all environments. ([Closes #10](https://github.com/bgreenwell/lstr/issues/20))
+- Optimized the release build profile in `Cargo.toml` by enabling LTO, stripping symbols, and setting `panic = "abort"`, significantly reducing the final binary size. ([PR #11](https://github.com/bgreenwell/lstr/pull/11))
+- Removed the build-time dependency on `openssl` by disabling default features for the `git2` crate, which simplifies building from source.
+- Refactored the project to use the version of `crossterm` re-exported by `ratatui`, preventing potential dependency version conflicts. ([PR #13](https://github.com/bgreenwell/lstr/pull/13))
+- Optimized the `git2` dependency by disabling its default features. This removes the build-time requirement for `openssl` and reduces the total number of dependencies. ([PR #5](https://github.com/bgreenwell/lstr/pull/5))
+
 ## [0.2.0] - 2025-06-17
 
 ### Added

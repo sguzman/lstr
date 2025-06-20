@@ -1,4 +1,4 @@
-# lstr demoo script for vhs
+# lstr demo script for vhs
 
 # 1. Setup the output and terminal properties
 Output "assets/lstr-demo.gif"
@@ -9,6 +9,7 @@ Set Height 618
 Set FontSize 16
 Set TypingSpeed 65ms
 Set Theme "Catppuccin Frappe"
+Set FontFamily "SpaceMono Nerd Font"
 
 # 2. Show the classic view with icons
 Type "lstr -g --icons"

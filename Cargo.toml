@@ -18,7 +18,6 @@ clap = { version = "4.5.7", features = ["derive"] }
 git2 = { version = "0.20.2", default-features = false }
 ignore = "0.4.22"
 ratatui = "0.27.0"
-rayon = "1.10.0"
 
 # Dependencies for testing the command-line interface
 [dev-dependencies]
