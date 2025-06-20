@@ -10,7 +10,7 @@ use crate::utils;
 use ignore::WalkBuilder;
 use ratatui::crossterm::{
     event::{
-        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
+        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers,
     },
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -190,30 +190,35 @@ fn run_app<B: Backend + Write>(
         terminal.draw(|f| ui(f, app_state, args))?;
 
         if let Event::Key(key) = event::read()? {
-            match key {
-                KeyEvent { code: KeyCode::Char('s'), modifiers: KeyModifiers::CONTROL, .. } => {
-                    if let Some(entry) = app_state.get_selected_entry() {
-                        break Ok(PostExitAction::PrintPath(entry.path.clone()));
-                    }
-                }
-                KeyEvent { code: KeyCode::Char('q'), .. } | KeyEvent { code: KeyCode::Esc, .. } => {
-                    break Ok(PostExitAction::None);
-                }
-                KeyEvent { code: KeyCode::Down, .. }
-                | KeyEvent { code: KeyCode::Char('j'), .. } => app_state.next(),
-                KeyEvent { code: KeyCode::Up, .. } | KeyEvent { code: KeyCode::Char('k'), .. } => {
-                    app_state.previous()
-                }
-                KeyEvent { code: KeyCode::Enter, .. } => {
-                    if let Some(entry) = app_state.get_selected_entry() {
-                        if entry.is_dir {
-                            app_state.toggle_selected_directory();
-                        } else {
-                            break Ok(PostExitAction::OpenFile(entry.path.clone()));
+            // Only process key press events to avoid the double-execution bug on Windows
+            if key.kind == KeyEventKind::Press {
+                match key.code {
+                    // Handle Ctrl+s for shell integration
+                    KeyCode::Char('s') if key.modifiers == KeyModifiers::CONTROL => {
+                        if let Some(entry) = app_state.get_selected_entry() {
+                            break Ok(PostExitAction::PrintPath(entry.path.clone()));
                         }
                     }
+                    // Handle normal quit
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        break Ok(PostExitAction::None);
+                    }
+                    // Handle navigation
+                    KeyCode::Down | KeyCode::Char('j') => app_state.next(),
+                    KeyCode::Up | KeyCode::Char('k') => app_state.previous(),
+                    // Handle Enter for expanding/opening
+                    KeyCode::Enter => {
+                        if let Some(entry) = app_state.get_selected_entry() {
+                            if entry.is_dir {
+                                app_state.toggle_selected_directory();
+                            } else {
+                                break Ok(PostExitAction::OpenFile(entry.path.clone()));
+                            }
+                        }
+                    }
+                    // Ignore all other key presses
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }
