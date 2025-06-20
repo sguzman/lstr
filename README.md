@@ -166,18 +166,10 @@ lcd
 
 This will launch the `lstr` interactive UI. Navigate to the directory you want, press `Ctrl+s`, and your shell's current directory will instantly change.
 
-## Performance and concurrency
-
-By default, `lstr` uses a parallel directory walker to maximize speed on multi-core systems. This parallelism is managed by the excellent [rayon](https://crates.io/crates/rayon) thread pool, which is used internally by `lstr`'s directory traversal engine.
-
-For advanced use cases, such as benchmarking or limiting CPU usage, you can control the number of threads by setting the `RAYON_NUM_THREADS` environment variable before running the command.
-
-**To force single-threaded (serial) execution:**
-
-```bash
-RAYON_NUM_THREADS=1 lstr .
-```
-
 ## Inspiration
 
 The philosophy and functionality of `lstr` are heavily inspired by the excellent C-based [tree](https://github.com/Old-Man-Programmer/tree) command line program. This project is an attempt to recreate that classic utility in modern, safe Rust.
+
+## License
+
+This project is licensed under the terms of the [MIT License](LICENSE).
