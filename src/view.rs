@@ -13,7 +13,7 @@ use std::io::{self, Write};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-/// Executes the classic directory tree view.
+/// Executes the classic directory tree view
 pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
     if !args.path.is_dir() {
         anyhow::bail!("'{}' is not a directory.", args.path.display());
@@ -44,7 +44,7 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
     let mut dir_count = 0;
     let mut file_count = 0;
 
-    // Use the serial walker for correctness and reliability.
+    // Use the serial walker for correctness and reliability
     for result in builder.build() {
         let entry = match result {
             Ok(entry) => entry,

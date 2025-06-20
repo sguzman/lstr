@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.1] - 2025-XY-XY
 
+### Removed 
+
+- Removed the `rayon` dependency and parallel tree walking for now (related to [#10](https://github.com/bgreenwell/lstr/issues/20)).
+
 ### Added
 
 - Added a Nix flake configuration (`flake.nix`) to provide a consistent and reproducible development environment for contributors. ([PR #10](https://github.com/bgreenwell/lstr/pull/10))
