@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Optimized the `git2` dependency by disabling its default features. This removes the build-time requirement for `openssl` and reduces the total number of dependencies. ([PR #5](https://github.com/bgreenwell/lstr/pull/5))
 
+- Fixed broken icons in GIF. ([Closes #4](https://github.com/bgreenwell/lstr/issues/4))
+
 ## [0.2.0] - 2025-06-17
 
 ### Added

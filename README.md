@@ -7,7 +7,7 @@
 A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree), with a powerful interactive mode.
 
 ![](assets/lstr-demo.gif)
-*An interactive overview of `lstr`'s project structure... using `lstr`.*
+*An interactive overview of a project's structure using `lstr`.*
 ## Philosophy
 
   - **Fast:** Runs directory scans in parallel by default to maximize speed on modern hardware.
