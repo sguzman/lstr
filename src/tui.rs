@@ -8,6 +8,7 @@ use crate::git::{self, StatusCache};
 use crate::icons;
 use crate::utils;
 use ignore::WalkBuilder;
+use lscolors::{Color as LsColor, LsColors, Style as LsStyle};
 use ratatui::crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers,
@@ -31,6 +32,46 @@ use std::process::Command;
 // Platform-specific import for unix permissions
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+
+/// Converts an lscolors::Style to a ratatui::style::Style
+fn to_ratatui_style(ls_style: LsStyle) -> Style {
+    let mut style = Style::default();
+
+    if let Some(fg) = ls_style.foreground {
+        style = style.fg(match fg {
+            LsColor::Black => Color::Black,
+            LsColor::Red => Color::Red,
+            LsColor::Green => Color::Green,
+            LsColor::Yellow => Color::Yellow,
+            LsColor::Blue => Color::Blue,
+            LsColor::Magenta => Color::Magenta,
+            LsColor::Cyan => Color::Cyan,
+            LsColor::White => Color::White,
+            LsColor::BrightBlack => Color::Gray,
+            LsColor::BrightRed => Color::LightRed,
+            LsColor::BrightGreen => Color::LightGreen,
+            LsColor::BrightYellow => Color::LightYellow,
+            LsColor::BrightBlue => Color::LightBlue,
+            LsColor::BrightMagenta => Color::LightMagenta,
+            LsColor::BrightCyan => Color::LightCyan,
+            LsColor::BrightWhite => Color::White,
+            LsColor::Fixed(n) => Color::Indexed(n),
+            LsColor::RGB(r, g, b) => Color::Rgb(r, g, b),
+        });
+    }
+
+    if ls_style.font_style.bold {
+        style = style.add_modifier(Modifier::BOLD);
+    }
+    if ls_style.font_style.italic {
+        style = style.add_modifier(Modifier::ITALIC);
+    }
+    if ls_style.font_style.underline {
+        style = style.add_modifier(Modifier::UNDERLINED);
+    }
+
+    style
+}
 
 enum PostExitAction {
     None,
@@ -150,7 +191,7 @@ impl AppState {
     }
 }
 
-pub fn run(args: &InteractiveArgs) -> anyhow::Result<()> {
+pub fn run(args: &InteractiveArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
     if !args.path.is_dir() {
         anyhow::bail!("'{}' is not a directory.", args.path.display());
     }
@@ -158,7 +199,7 @@ pub fn run(args: &InteractiveArgs) -> anyhow::Result<()> {
 
     let mut app_state = AppState::new(args, &root_path)?;
     let mut terminal = setup_terminal()?;
-    let post_exit_action = run_app(&mut terminal, &mut app_state, args)?;
+    let post_exit_action = run_app(&mut terminal, &mut app_state, args, ls_colors)?;
     restore_terminal(&mut terminal)?;
 
     match post_exit_action {
@@ -185,28 +226,24 @@ fn run_app<B: Backend + Write>(
     terminal: &mut Terminal<B>,
     app_state: &mut AppState,
     args: &InteractiveArgs,
+    ls_colors: &LsColors,
 ) -> anyhow::Result<PostExitAction> {
     loop {
-        terminal.draw(|f| ui(f, app_state, args))?;
+        terminal.draw(|f| ui(f, app_state, args, ls_colors))?;
 
         if let Event::Key(key) = event::read()? {
-            // Only process key press events to avoid the double-execution bug on Windows
             if key.kind == KeyEventKind::Press {
                 match key.code {
-                    // Handle Ctrl+s for shell integration
                     KeyCode::Char('s') if key.modifiers == KeyModifiers::CONTROL => {
                         if let Some(entry) = app_state.get_selected_entry() {
                             break Ok(PostExitAction::PrintPath(entry.path.clone()));
                         }
                     }
-                    // Handle normal quit
                     KeyCode::Char('q') | KeyCode::Esc => {
                         break Ok(PostExitAction::None);
                     }
-                    // Handle navigation
                     KeyCode::Down | KeyCode::Char('j') => app_state.next(),
                     KeyCode::Up | KeyCode::Char('k') => app_state.previous(),
-                    // Handle Enter for expanding/opening
                     KeyCode::Enter => {
                         if let Some(entry) = app_state.get_selected_entry() {
                             if entry.is_dir {
@@ -216,7 +253,6 @@ fn run_app<B: Backend + Write>(
                             }
                         }
                     }
-                    // Ignore all other key presses
                     _ => {}
                 }
             }
@@ -224,7 +260,7 @@ fn run_app<B: Backend + Write>(
     }
 }
 
-fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs) {
+fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs, ls_colors: &LsColors) {
     let frame_width = f.size().width as usize;
     let items: Vec<ListItem> = app_state
         .visible_entries
@@ -275,14 +311,14 @@ fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs) {
                     Style::default().fg(map_color(color)),
                 ));
             }
+
             let name = entry.path.file_name().unwrap().to_string_lossy();
-            let mut name_span = Span::raw(name.to_string());
-            if entry.is_dir {
-                let dir_style = Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD);
-                name_span.style = name_span.style.patch(dir_style);
-            }
+            let lscolors_style = ls_colors.style_for_path(&entry.path).cloned().unwrap_or_default();
+            let ratatui_style = to_ratatui_style(lscolors_style);
+            let name_span = Span::styled(name.to_string(), ratatui_style);
             spans.push(name_span);
-            if args.size {
+
+            if args.size && !entry.is_dir {
                 if let Some(size) = entry.size {
                     let size_str = utils::format_size(size);
                     let left_len: usize = spans.iter().map(|s| s.width()).sum();
@@ -296,7 +332,7 @@ fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs) {
         })
         .collect();
     let list = List::new(items)
-        .highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
         .highlight_symbol("> ");
     f.render_stateful_widget(list, f.size(), &mut app_state.list_state);
 }
@@ -372,11 +408,9 @@ fn map_color(c: colored::Color) -> Color {
     }
 }
 
-// --- Terminal setup and restore functions ---
 type TerminalWriter = CrosstermBackend<Box<dyn Write + Send>>;
 
 fn setup_terminal() -> anyhow::Result<Terminal<TerminalWriter>> {
-    // If stdout is a pipe, draw the TUI to stderr, otherwise use stdout.
     let writer: Box<dyn Write + Send> =
         if stdout().is_terminal() { Box::new(stdout()) } else { Box::new(stderr()) };
     enable_raw_mode()?;
@@ -393,7 +427,6 @@ fn restore_terminal<B: Backend + Write>(terminal: &mut Terminal<B>) -> anyhow::R
     Ok(())
 }
 
-// Unit tests
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -12,33 +12,35 @@ Set Theme "Catppuccin Frappe"
 Set FontFamily "SpaceMono Nerd Font"
 
 # 2. Show the classic view with icons
-Type "lstr ../unifres -g -L=2 --icons"
+Type "lstr ../lstr_test_dir -g -L=2 --icons"
 Sleep 1s
 Enter
 Sleep 5s
 Ctrl+L
 
 # 3. Show the classic view with size and permissions
-Type "lstr ../unifres -Ggps -L=2 --icons"
+Type "lstr ../lstr_test_dir -Ggps -L=2 --icons"
 Sleep 1s
 Enter
 Sleep 5s
 Ctrl+L
 
 # 4. Show the interactive mode, pre-expanded
-Type "lstr i ../unifres -Ggps --icons --expand-level=2"
+Type "lstr i ../lstr_test_dir -Ggps --icons --expand-level=2"
 Sleep 1s
 Enter
 Sleep 2s
 
 # 5. Navigate and interact with the TUI
-Down 7
+Down 6
+Sleep 1s
+Up 5
 Sleep 1s
 Enter
 Sleep 2s
 Enter
 Sleep 1s
-Down 4
+Down 3
 Sleep 2s
 Enter
 Sleep 5s

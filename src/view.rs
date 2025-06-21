@@ -6,6 +6,7 @@ use crate::icons;
 use crate::utils;
 use colored::{control, Colorize};
 use ignore::{self, WalkBuilder};
+use lscolors::LsColors;
 use std::fs;
 use std::io::{self, Write};
 
@@ -14,7 +15,7 @@ use std::io::{self, Write};
 use std::os::unix::fs::PermissionsExt;
 
 /// Executes the classic directory tree view
-pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
+pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
     if !args.path.is_dir() {
         anyhow::bail!("'{}' is not a directory.", args.path.display());
     }
@@ -44,7 +45,6 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
     let mut dir_count = 0;
     let mut file_count = 0;
 
-    // Use the serial walker for correctness and reliability
     for result in builder.build() {
         let entry = match result {
             Ok(entry) => entry,
@@ -97,14 +97,17 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
         let metadata = if args.size || args.permissions { entry.metadata().ok() } else { None };
         let permissions_str = if args.permissions {
             let perms = if let Some(md) = &metadata {
+                // <-- Use 'md' here
                 #[cfg(unix)]
                 {
+                    // Use 'md' for Unix-specific logic
                     let mode = md.permissions().mode();
                     let file_type_char = if md.is_dir() { 'd' } else { '-' };
                     format!("{}{}", file_type_char, utils::format_permissions(mode))
                 }
                 #[cfg(not(unix))]
                 {
+                    // This line tells the compiler we've intentionally not used 'md' on non-Unix systems
                     let _ = md;
                     "----------".to_string()
                 }
@@ -133,37 +136,65 @@ pub fn run(args: &ViewArgs) -> anyhow::Result<()> {
             String::new()
         };
 
+        // --- Corrected Logic Block ---
+        let ls_style = ls_colors.style_for_path(entry.path()).cloned().unwrap_or_default();
+        let mut styled_name = name.to_string().normal();
+
+        if let Some(fg) = ls_style.foreground {
+            use lscolors::Color as LsColor;
+            let color = match fg {
+                LsColor::Black => colored::Color::Black,
+                LsColor::Red => colored::Color::Red,
+                LsColor::Green => colored::Color::Green,
+                LsColor::Yellow => colored::Color::Yellow,
+                LsColor::Blue => colored::Color::Blue,
+                LsColor::Magenta => colored::Color::Magenta,
+                LsColor::Cyan => colored::Color::Cyan,
+                LsColor::White => colored::Color::White,
+                LsColor::BrightBlack => colored::Color::BrightBlack,
+                LsColor::BrightRed => colored::Color::BrightRed,
+                LsColor::BrightGreen => colored::Color::BrightGreen,
+                LsColor::BrightYellow => colored::Color::BrightYellow,
+                LsColor::BrightBlue => colored::Color::BrightBlue,
+                LsColor::BrightMagenta => colored::Color::BrightMagenta,
+                LsColor::BrightCyan => colored::Color::BrightCyan,
+                LsColor::BrightWhite => colored::Color::BrightWhite,
+                LsColor::Fixed(_) => colored::Color::White,
+                LsColor::RGB(r, g, b) => colored::Color::TrueColor { r, g, b },
+            };
+            styled_name = styled_name.color(color);
+        }
+
+        if ls_style.font_style.bold {
+            styled_name = styled_name.bold();
+        }
+        if ls_style.font_style.italic {
+            styled_name = styled_name.italic();
+        }
+        if ls_style.font_style.underline {
+            styled_name = styled_name.underline();
+        }
+        // --- End Corrected Logic Block ---
+
         if is_dir {
             dir_count += 1;
-            if writeln!(
-                io::stdout(),
-                "{}{}{}└── {}{}",
-                git_status_str,
-                permissions_str.dimmed(),
-                indent,
-                icon_str,
-                name.blue().bold()
-            )
-            .is_err()
-            {
-                break;
-            }
         } else {
             file_count += 1;
-            if writeln!(
-                io::stdout(),
-                "{}{}{}└── {}{}{}",
-                git_status_str,
-                permissions_str.dimmed(),
-                indent,
-                icon_str,
-                name,
-                size_str.dimmed()
-            )
-            .is_err()
-            {
-                break;
-            }
+        }
+
+        if writeln!(
+            io::stdout(),
+            "{}{}{}└── {}{}{}",
+            git_status_str,
+            permissions_str.dimmed(),
+            indent,
+            icon_str,
+            styled_name,
+            size_str.dimmed()
+        )
+        .is_err()
+        {
+            break;
         }
     }
 

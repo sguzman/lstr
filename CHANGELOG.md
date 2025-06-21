@@ -13,9 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Integrated the `lscolors` crate to respect the `LS_COLORS` environment variable, allowing for user-configurable file and directory colors that match their system's theme.
+
 - Added a Nix flake configuration (`flake.nix`) to provide a consistent and reproducible development environment for contributors. ([PR #10](https://github.com/bgreenwell/lstr/pull/10))
 
 ### Fixed
+
+- In interactive mode, the selection highlight was changed to use reverse video, guaranteeing visibility and contrast regardless of the underlying file color.
 
 - Fixed a double-input bug in interactive mode on Windows that caused erratic navigation. The TUI now correctly filters for key press events. ([Closes #21](https://github.com/bgreenwell/lstr/issues/21))
 
