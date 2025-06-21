@@ -96,15 +96,19 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
 
         let metadata = if args.size || args.permissions { entry.metadata().ok() } else { None };
         let permissions_str = if args.permissions {
-            let perms = if let Some(_md) = &metadata {
+            let perms = if let Some(md) = &metadata {
+                // <-- Use 'md' here
                 #[cfg(unix)]
                 {
+                    // Use 'md' for Unix-specific logic
                     let mode = md.permissions().mode();
                     let file_type_char = if md.is_dir() { 'd' } else { '-' };
                     format!("{}{}", file_type_char, utils::format_permissions(mode))
                 }
                 #[cfg(not(unix))]
                 {
+                    // This line tells the compiler we've intentionally not used 'md' on non-Unix systems
+                    let _ = md;
                     "----------".to_string()
                 }
             } else {
