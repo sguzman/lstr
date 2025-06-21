@@ -13,6 +13,7 @@ mod view;
 
 use app::{Args, Commands};
 use clap::Parser;
+use lscolors::LsColors;
 
 /// The main function and entry point of the application.
 ///
@@ -27,9 +28,12 @@ fn main() -> anyhow::Result<()> {
     // Parse the command-line arguments into our Args struct.
     let args = Args::parse();
 
+    // Create the LsColors instance from the environment
+    let ls_colors = LsColors::from_env().unwrap_or_default();
+
     // Check if a subcommand was passed. If not, default to the `view` command.
     match &args.command {
-        Some(Commands::Interactive(interactive_args)) => tui::run(interactive_args),
-        None => view::run(&args.view),
+        Some(Commands::Interactive(interactive_args)) => tui::run(interactive_args, &ls_colors),
+        None => view::run(&args.view, &ls_colors),
     }
 }
