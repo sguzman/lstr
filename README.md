@@ -1,4 +1,4 @@
-# lstr
+git# lstr
 
 [](https://github.com/bgreenwell/lstr/actions)
 [](https://crates.io/crates/lstr)
@@ -181,7 +181,7 @@ macOS does not set the `LS_COLORS` variable by default. To enable this feature, 
 
 ```bash
 brew install coreutils
-```
+````
 
 Then, add the following line to your shell's startup file (e.g., `~/.zshrc` or `~/.bash_profile`):
 
@@ -190,7 +190,35 @@ Then, add the following line to your shell's startup file (e.g., `~/.zshrc` or `
 eval "$(gdircolors)"
 ```
 
-After starting a new shell session, `lstr` will automatically display your configured colors.
+### Windows
+
+Windows does not use the `LS_COLORS` variable natively, but you can set it manually to enable color support in modern terminals like Windows Terminal.
+
+First, copy a standard `LS_COLORS` string, such as this one:
+`rs=0:di=01;34:ln=01;36:ex=01;32:*.zip=01;31:*.png=01;35:`. This string defines colors for various file types:
+
+* **Directories:** Displayed in **bold blue**.
+* **Executable files:** Displayed in **bold green** (e.g., `.sh` scripts).
+* **Symbolic links:** Displayed in **bold cyan**.
+* **Archives:** Displayed in **bold red** (e.g., `.zip`, `.tar.gz`).
+* **Image files:** Displayed in **bold magenta** (e.g., `.png`, `.jpg`).
+* **Other files:** Displayed in the terminal's default text color.
+
+To set it for your current **PowerShell** session, run:
+
+```powershell
+$env:LS_COLORS="rs=0:di=01;34:ln=01;36:ex=01;32:*.zip=01;31:*.png=01;35:"
+```
+
+To set it for your current **Command Prompt** (cmd) session, run:
+
+```cmd
+set LS_COLORS=rs=0:di=01;34:ln=01;36:ex=01;32:*.zip=01;31:*.png=01;35:
+```
+
+To make the setting permanent, you can add the command to your PowerShell profile or set it in the system's "Environment Variables" dialog.
+
+After setting the variable and starting a new shell session, `lstr` will automatically display your configured colors.
 
 ## Inspiration
 
