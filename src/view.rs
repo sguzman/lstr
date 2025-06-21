@@ -96,7 +96,7 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
 
         let metadata = if args.size || args.permissions { entry.metadata().ok() } else { None };
         let permissions_str = if args.permissions {
-            let perms = if let Some(md) = &metadata {
+            let perms = if let Some(_md) = &metadata {
                 #[cfg(unix)]
                 {
                     let mode = md.permissions().mode();
