@@ -4,19 +4,18 @@
 [![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A blazingly fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree), with a powerful interactive mode.
+A fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree), with a powerful interactive mode.
 
 ![](assets/lstr-demo.gif)
 *An interactive overview of a project's structure using `lstr`.*
+
 ## Philosophy
 
-  - **Fast:** Runs directory scans in parallel by default to maximize speed on modern hardware.
   - **Minimalist:** Provides essential features without the bloat. The core experience is clean and uncluttered.
   - **Interactive:** An optional TUI mode for fluid, keyboard-driven exploration.
 
 ## Features
 
-  - **High-performance:** Scans directories in parallel to be as fast as possible.
   - **Classic and interactive modes:** Use `lstr` for a classic `tree`-like view, or launch `lstr interactive` for a fully interactive TUI.
   - **Rich information display (optional):**
       - Display file-specific icons with `--icons` (requires a Nerd Font).
