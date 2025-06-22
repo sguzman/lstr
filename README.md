@@ -1,8 +1,8 @@
-git# lstr
+# lstr
 
-[](https://github.com/bgreenwell/lstr/actions)
-[](https://crates.io/crates/lstr)
-[](https://opensource.org/licenses/MIT)
+[![Build Status](https://github.com/bgreenwell/lstr/actions/workflows/ci.yml/badge.svg)](https://github.com/bgreenwell/lstr/actions)More actions
+[![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A fast, minimalist directory tree viewer, written in Rust. Inspired by the command line program [tree](https://github.com/Old-Man-Programmer/tree), with a powerful interactive mode.
 
