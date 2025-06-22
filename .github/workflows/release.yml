@@ -6,7 +6,8 @@ on:
   push:
     tags:
       - 'v*.*.*' # This workflow runs when we push a tag like v0.2.1
-    workflow_dispatch:
+  
+  workflow_dispatch:
 
 jobs:
   create-release:
