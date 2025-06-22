@@ -75,44 +75,34 @@ jobs:
       - name: Prepare package
         shell: bash
         run: |
-          # Define the final package name from the matrix
           PACKAGE_NAME="lstr-${{ matrix.asset_name_suffix }}"
+          STAGING_DIR="staging"
+          
+          mkdir "$STAGING_DIR"
 
-          # Create a temporary staging directory to hold the assets
-          mkdir staging
-
-          # Copy the correct binary into the staging directory
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cp target/${{ matrix.target }}/release/lstr.exe staging/
+            cp "target/${{ matrix.target }}/release/lstr.exe" "$STAGING_DIR/"
           else
-            cp target/${{ matrix.target }}/release/lstr staging/
+            cp "target/${{ matrix.target }}/release/lstr" "$STAGING_DIR/"
           fi
           
-          # Copy documentation into the staging directory
-          cp README.md staging/
-          cp LICENSE staging/
-          
-          # --- Start of Debugging ---
+          cp README.md "$STAGING_DIR/"
+          cp LICENSE "$STAGING_DIR/"
+
           echo "--- Contents of staging directory ---"
-          ls -R staging
-          # --- End of Debugging ---
+          ls -R "$STAGING_DIR"
 
-          # Create the final archive from the contents of the staging directory
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            # For zip, archive the files inside the staging directory
-            7z a "$PACKAGE_NAME" ./staging/*
+            7z a "$PACKAGE_NAME" "./$STAGING_DIR/*"
           else
-            # For tar.gz, change directory to staging and archive its contents
-            tar -czf "../$PACKAGE_NAME" .
+            # Corrected tar command: Create archive in the current directory
+            tar -czf "$PACKAGE_NAME" -C "$STAGING_DIR" .
           fi
 
-          # --- Start of Debugging ---
           echo "--- Contents of workspace after archiving ---"
-          ls -R
+          ls -R .
           echo "ASSET will be set to: $PACKAGE_NAME"
-          # --- End of Debugging ---
-
-          # Set the asset name for the next step
+          
           echo "ASSET=$PACKAGE_NAME" >> $GITHUB_ENV
 
       - name: Upload Release Asset
