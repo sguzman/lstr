@@ -67,32 +67,34 @@ jobs:
       - name: Prepare package
         shell: bash
         run: |
-          # Determine binary path and name based on OS
+          # Define the final package name from the matrix
+          PACKAGE_NAME="lstr-${{ matrix.asset_name_suffix }}"
+
+          # Create a temporary staging directory to hold the assets
+          mkdir staging
+
+          # Copy the correct binary into the staging directory
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            BINARY_PATH="target/${{ matrix.target }}/release/lstr.exe"
-            PACKAGE_DIR="lstr-${{ github.ref_name }}-windows-x86_64"
+            cp target/${{ matrix.target }}/release/lstr.exe staging/
           else
-            BINARY_PATH="target/${{ matrix.target }}/release/lstr"
-            # This is the corrected line
-            PACKAGE_DIR="lstr-${{ github.ref_name }}-${{ replace(matrix.asset_name_suffix, '.tar.gz', '') }}"
-          fi
-
-          # Create a directory to hold the assets
-          mkdir -p "$PACKAGE_DIR"
-
-          # Copy binary, README, and LICENSE
-          cp "$BINARY_PATH" "$PACKAGE_DIR/"
-          cp README.md "$PACKAGE_DIR/"
-          cp LICENSE "$PACKAGE_DIR/"
-
-          # Archive the directory
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            7z a "lstr-${{ matrix.asset_name_suffix }}" "$PACKAGE_DIR"
-          else
-            tar -czf "lstr-${{ matrix.asset_name_suffix }}" "$PACKAGE_DIR"
+            cp target/${{ matrix.target }}/release/lstr staging/
           fi
           
-          echo "ASSET=lstr-${{ matrix.asset_name_suffix }}" >> $GITHUB_ENV
+          # Copy documentation into the staging directory
+          cp README.md staging/
+          cp LICENSE staging/
+          
+          # Create the final archive from the contents of the staging directory
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # For zip, archive the files inside the staging directory
+            7z a "$PACKAGE_NAME" ./staging/*
+          else
+            # For tar.gz, change directory to staging and archive its contents
+            tar -czf "$PACKAGE_NAME" -C staging .
+          fi
+
+          # Set the asset name for the next step
+          echo "ASSET=$PACKAGE_NAME" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
