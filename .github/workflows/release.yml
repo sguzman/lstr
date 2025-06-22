@@ -1,0 +1,102 @@
+# .github/workflows/release.yml
+
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # This workflow runs when we push a tag like v0.2.1
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+
+  build-and-upload:
+    name: Build and Upload Binaries
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            asset_name_suffix: "windows-x86_64.zip"
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            asset_name_suffix: "linux-x86_64.tar.gz"
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            asset_name_suffix: "macos-x86_64.tar.gz"
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            asset_name_suffix: "macos-arm64.tar.gz"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+        # For MUSL target, we might need to set up cross-compilation
+        # if: matrix.target == 'x86_64-unknown-linux-musl' ...
+
+      - name: Prepare package
+        shell: bash
+        run: |
+          # Determine binary path and name based on OS
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            BINARY_PATH="target/${{ matrix.target }}/release/lstr.exe"
+            PACKAGE_DIR="lstr-${{ github.ref_name }}-windows-x86_64"
+          else
+            BINARY_PATH="target/${{ matrix.target }}/release/lstr"
+            PACKAGE_DIR="lstr-${{ github.ref_name }}-${{ matrix.asset_name_suffix | replace: '.tar.gz', '' }}"
+          fi
+
+          # Create a directory to hold the assets
+          mkdir -p "$PACKAGE_DIR"
+
+          # Copy binary, README, and LICENSE
+          cp "$BINARY_PATH" "$PACKAGE_DIR/"
+          cp README.md "$PACKAGE_DIR/"
+          cp LICENSE "$PACKAGE_DIR/"
+
+          # Archive the directory
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            7z a "lstr-${{ matrix.asset_name_suffix }}" "$PACKAGE_DIR"
+          else
+            tar -czf "lstr-${{ matrix.asset_name_suffix }}" "$PACKAGE_DIR"
+          fi
+          
+          echo "ASSET=lstr-${{ matrix.asset_name_suffix }}" >> $GITHUB_ENV
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.ASSET }}
+          asset_name: ${{ env.ASSET }}
+          asset_content_type: application/octet-stream
