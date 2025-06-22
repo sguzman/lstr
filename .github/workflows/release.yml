@@ -92,14 +92,25 @@ jobs:
           cp README.md staging/
           cp LICENSE staging/
           
+          # --- Start of Debugging ---
+          echo "--- Contents of staging directory ---"
+          ls -R staging
+          # --- End of Debugging ---
+
           # Create the final archive from the contents of the staging directory
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             # For zip, archive the files inside the staging directory
             7z a "$PACKAGE_NAME" ./staging/*
           else
             # For tar.gz, change directory to staging and archive its contents
-            tar -czf "$PACKAGE_NAME" -C staging .
+            tar -czf "../$PACKAGE_NAME" .
           fi
+
+          # --- Start of Debugging ---
+          echo "--- Contents of workspace after archiving ---"
+          ls -R
+          echo "ASSET will be set to: $PACKAGE_NAME"
+          # --- End of Debugging ---
 
           # Set the asset name for the next step
           echo "ASSET=$PACKAGE_NAME" >> $GITHUB_ENV
