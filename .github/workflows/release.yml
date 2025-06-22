@@ -16,6 +16,9 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
+      - name: Checkout code # <-- ADD THIS STEP
+        uses: actions/checkout@v4
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -25,8 +28,8 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           body_path: CHANGELOG.md
-          draft: false
-          prerelease: false
+          draft: true       # Keeping this as true for testing
+          prerelease: true  # Keeping this as true for testing
 
   build-and-upload:
     name: Build and Upload Binaries
