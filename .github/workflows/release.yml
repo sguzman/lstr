@@ -73,7 +73,8 @@ jobs:
             PACKAGE_DIR="lstr-${{ github.ref_name }}-windows-x86_64"
           else
             BINARY_PATH="target/${{ matrix.target }}/release/lstr"
-            PACKAGE_DIR="lstr-${{ github.ref_name }}-${{ matrix.asset_name_suffix | replace: '.tar.gz', '' }}"
+            # This is the corrected line
+            PACKAGE_DIR="lstr-${{ github.ref_name }}-${{ replace(matrix.asset_name_suffix, '.tar.gz', '') }}"
           fi
 
           # Create a directory to hold the assets
