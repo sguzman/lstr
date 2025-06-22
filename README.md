@@ -1,6 +1,6 @@
 # lstr
 
-[![Build Status](https://github.com/bgreenwell/lstr/actions/workflows/ci.yml/badge.svg)](https://github.com/bgreenwell/lstr/actions)More actions
+[![Build Status](https://github.com/bgreenwell/lstr/actions/workflows/ci.yml/badge.svg)](https://github.com/bgreenwell/lstr/actions)
 [![Latest Version](https://img.shields.io/crates/v/lstr.svg)](https://crates.io/crates/lstr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
