@@ -2,10 +2,8 @@
 
 # 1. Setup the output and terminal properties
 Output "assets/lstr-demo.gif"
-#Set Width 1200
-#Set Height 600
-Set Width 1000
-Set Height 618
+Set Width 900
+Set Height 557
 Set FontSize 18
 Set TypingSpeed 65ms
 Set Theme "Catppuccin Frappe"
