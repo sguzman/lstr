@@ -30,16 +30,29 @@ A fast, minimalist directory tree viewer, written in Rust. Inspired by the comma
 
 ## Installation
 
-You need the Rust toolchain installed on your system to build `lstr`. Or use `nix develop` command to create development environment.
+### With Homebrew (macOS)
+
+The easiest way to install `lstr` on macOS is with Homebrew.
+
+```bash
+# First, tap our repository
+brew tap bgreenwell/lstr
+
+# Now, install lstr
+brew install lstr
+```
+
+### From source (all platforms)
+
+You need the Rust toolchain installed on your system to build `lstr`.
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/bgreenwell/lstr.git
+    git clone [https://github.com/bgreenwell/lstr.git](https://github.com/bgreenwell/lstr.git)
     cd lstr
     ```
 2.  **Build and install using Cargo:**
     ```bash
-    # This compiles in release mode and copies the binary to ~/.cargo/bin
     cargo install --path .
     ```
 
