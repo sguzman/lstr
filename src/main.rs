@@ -13,6 +13,8 @@ mod view;
 
 use app::{Args, Commands};
 use clap::Parser;
+#[cfg(windows)]
+use colored::control;
 use lscolors::LsColors;
 
 /// The main function and entry point of the application.
@@ -25,6 +27,12 @@ use lscolors::LsColors;
 /// * `Ok(())` on successful execution.
 /// * `Err(anyhow::Error)` if any error occurs during execution.
 fn main() -> anyhow::Result<()> {
+    // On Windows, explicitly try to enable ANSI support.
+    // This may fail on older versions of Windows, but we ignore the error
+    // and let the `colored` crate handle it gracefully.
+    #[cfg(windows)]
+    let _ = control::set_virtual_terminal(true);
+
     // Parse the command-line arguments into our Args struct.
     let args = Args::parse();
 

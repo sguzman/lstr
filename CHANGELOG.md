@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed garbled color output (raw ANSI codes) in the classic view mode on some Windows terminals. The application now explicitly enables virtual terminal processing on startup, ensuring color codes are interpreted correctly.
+
 - In interactive mode, the selection highlight was changed to use reverse video, guaranteeing visibility and contrast regardless of the underlying file color.
 
 - Fixed a double-input bug in interactive mode on Windows that caused erratic navigation. The TUI now correctly filters for key press events. ([Closes #21](https://github.com/bgreenwell/lstr/issues/21))
