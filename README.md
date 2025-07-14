@@ -73,6 +73,7 @@ Note that `PATH` defaults to the current directory (`.`) if not specified.
 | `-g`, `--gitignore`    | Respect `.gitignore` and other standard ignore files.                       |
 | `-G`, `--git-status`   | Show git status for files and directories.                                  |
 | `--icons`              | Display file-specific icons; requires a [Nerd Font](https://www.nerdfonts.com/). |
+| `--hyperlinks`         | Render file paths as clickable hyperlinks (classic mode only)               |
 | `-L`, `--level <LEVEL>`| Maximum depth to descend.                                                   |
 | `-p`, `--permissions`  | Display file permissions (Unix-like systems only).                          |
 | `-s`, `--size`         | Display the size of files.                                                  |
@@ -120,7 +121,13 @@ lstr -sp
 lstr -aG
 ```
 
-**5. Start an interactive session with all data displayed**
+**5. Get a tree with clickable file links (in a supported terminal)**
+
+```bash
+lstr --hyperlinks
+```
+
+**6. Start an interactive session with all data displayed**
 
 ```bash
 lstr interactive -gG --icons -s -p

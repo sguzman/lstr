@@ -60,6 +60,9 @@ pub struct ViewArgs {
     /// Display file-specific icons (requires a Nerd Font).
     #[arg(long, help = "Display file-specific icons (requires a Nerd Font)")]
     pub icons: bool,
+    /// Render file paths as clickable hyperlinks.
+    #[arg(long)]
+    pub hyperlinks: bool,
 }
 
 /// Arguments for the `interactive` command.

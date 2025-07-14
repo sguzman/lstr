@@ -7,6 +7,7 @@ use crate::utils;
 use colored::{control, Colorize};
 use ignore::{self, WalkBuilder};
 use lscolors::LsColors;
+use url::Url;
 use std::fs;
 use std::io::{self, Write};
 
@@ -174,7 +175,21 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
         if ls_style.font_style.underline {
             styled_name = styled_name.underline();
         }
-        // --- End Corrected Logic Block ---
+        
+        let final_name = if args.hyperlinks && !is_dir {
+            // Canonicalize the path to get an absolute path for the URL
+            if let Ok(abs_path) = fs::canonicalize(entry.path()) {
+                if let Ok(url) = Url::from_file_path(abs_path) {
+                    format!("\x1B]8;;{}\x07{}\x1B]8;;\x07", url, styled_name)
+                } else {
+                    styled_name.to_string()
+                }
+            } else {
+                styled_name.to_string()
+            }      
+        } else {
+            styled_name.to_string()
+        };
 
         if is_dir {
             dir_count += 1;
@@ -189,7 +204,8 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
             permissions_str.dimmed(),
             indent,
             icon_str,
-            styled_name,
+            //styled_name,
+            final_name,
             size_str.dimmed()
         )
         .is_err()
