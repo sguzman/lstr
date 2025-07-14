@@ -7,9 +7,9 @@ use crate::utils;
 use colored::{control, Colorize};
 use ignore::{self, WalkBuilder};
 use lscolors::LsColors;
-use url::Url;
 use std::fs;
 use std::io::{self, Write};
+use url::Url;
 
 // Platform-specific import for unix permissions
 #[cfg(unix)]
@@ -50,7 +50,7 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
         let entry = match result {
             Ok(entry) => entry,
             Err(err) => {
-                eprintln!("lstr: ERROR: {}", err);
+                eprintln!("lstr: ERROR: {err}");
                 continue;
             }
         };
@@ -82,7 +82,7 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
                                 git::FileStatus::Conflicted => colored::Color::BrightRed,
                                 git::FileStatus::Untracked => colored::Color::Magenta,
                             };
-                            format!("{} ", status_char).color(color).to_string()
+                            format!("{status_char} ").color(color).to_string()
                         })
                         .unwrap_or_else(|| "  ".to_string())
                 } else {
@@ -115,7 +115,7 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
             } else {
                 "----------".to_string()
             };
-            format!("{} ", perms)
+            format!("{perms} ")
         } else {
             String::new()
         };
@@ -175,18 +175,18 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
         if ls_style.font_style.underline {
             styled_name = styled_name.underline();
         }
-        
+
         let final_name = if args.hyperlinks && !is_dir {
             // Canonicalize the path to get an absolute path for the URL
             if let Ok(abs_path) = fs::canonicalize(entry.path()) {
                 if let Ok(url) = Url::from_file_path(abs_path) {
-                    format!("\x1B]8;;{}\x07{}\x1B]8;;\x07", url, styled_name)
+                    format!("\x1B]8;;{url}\x07{styled_name}\x1B]8;;\x07")
                 } else {
                     styled_name.to_string()
                 }
             } else {
                 styled_name.to_string()
-            }      
+            }
         } else {
             styled_name.to_string()
         };
@@ -214,8 +214,8 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
         }
     }
 
-    let summary = format!("\n{} directories, {} files", dir_count, file_count);
-    _ = writeln!(io::stdout(), "{}", summary);
+    let summary = format!("\n{dir_count} directories, {file_count} files");
+    _ = writeln!(io::stdout(), "{summary}");
 
     Ok(())
 }

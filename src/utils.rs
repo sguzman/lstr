@@ -12,7 +12,7 @@ pub fn format_size(bytes: u64) -> String {
     let bytes = bytes as f64;
 
     if bytes < KIB {
-        format!("{} B", bytes)
+        format!("{bytes} B")
     } else if bytes < MIB {
         format!("{:.1} KiB", bytes / KIB)
     } else if bytes < GIB {
@@ -36,10 +36,7 @@ pub fn format_permissions(mode: u32) -> String {
     let other_r = if mode & 0o004 != 0 { 'r' } else { '-' };
     let other_w = if mode & 0o002 != 0 { 'w' } else { '-' };
     let other_x = if mode & 0o001 != 0 { 'x' } else { '-' };
-    format!(
-        "{}{}{}{}{}{}{}{}{}",
-        user_r, user_w, user_x, group_r, group_w, group_x, other_r, other_w, other_x
-    )
+    format!("{user_r}{user_w}{user_x}{group_r}{group_w}{group_x}{other_r}{other_w}{other_x}")
 }
 
 // Unit tests for utility functions

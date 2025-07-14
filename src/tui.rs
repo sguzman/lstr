@@ -281,7 +281,7 @@ fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs, ls_colors
                     (" ".to_string(), Color::Reset)
                 };
                 spans.push(Span::styled(
-                    format!("{} ", status_char),
+                    format!("{status_char} "),
                     Style::default().fg(status_color),
                 ));
             }
@@ -306,10 +306,7 @@ fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs, ls_colors
             spans.push(Span::raw(branch_str));
             if args.icons {
                 let (icon, color) = icons::get_icon_for_path(&entry.path, entry.is_dir);
-                spans.push(Span::styled(
-                    format!("{} ", icon),
-                    Style::default().fg(map_color(color)),
-                ));
+                spans.push(Span::styled(format!("{icon} "), Style::default().fg(map_color(color))));
             }
 
             let name = entry.path.file_name().unwrap().to_string_lossy();
