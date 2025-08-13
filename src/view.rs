@@ -70,7 +70,6 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
     sort::sort_entries(&mut entries, &sort_options);
 
     for entry in entries {
-
         let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
         if args.dirs_only && !is_dir {
             continue;

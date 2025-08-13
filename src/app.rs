@@ -1,9 +1,9 @@
 //! Defines the command-line interface for the lstr application.
 
+use crate::sort;
 use clap::{Parser, Subcommand, ValueEnum};
 use std::fmt;
 use std::path::PathBuf;
-use crate::sort;
 
 /// A blazingly fast, minimalist directory tree viewer, written in Rust.
 #[derive(Parser, Debug)]

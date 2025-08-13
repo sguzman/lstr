@@ -342,18 +342,15 @@ fn scan_directory(
 ) -> anyhow::Result<Vec<FileEntry>> {
     let mut builder = WalkBuilder::new(path);
     builder.hidden(!args.all).git_ignore(args.gitignore);
-    
+
     // Collect all DirEntry objects first, filtering out the root path
-    let mut dir_entries: Vec<_> = builder
-        .build()
-        .flatten()
-        .filter(|result| result.path() != path)
-        .collect();
-    
+    let mut dir_entries: Vec<_> =
+        builder.build().flatten().filter(|result| result.path() != path).collect();
+
     // Apply sorting to the DirEntry objects
     let sort_options = args.to_sort_options();
     sort::sort_entries(&mut dir_entries, &sort_options);
-    
+
     // Convert DirEntry objects to FileEntry objects
     let mut entries = Vec::new();
     for result in dir_entries {
