@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added a `--hyperlinks` flag to render file paths as clickable links in classic `view` mode.
 
+- Added comprehensive sorting options for both classic and interactive modes:
+  - `--sort <TYPE>`: Sort by name (default), size, modified time, or extension
+  - `--dirs-first`: Sort directories before files
+  - `--case-sensitive`: Use case-sensitive sorting with specific order (numbers → uppercase → lowercase)
+  - `--natural-sort`: Version-aware sorting (file1 < file2 < file10)
+  - `--reverse`: Reverse any sort order
+  - `--dotfiles-first`: Priority ordering (dotfolders → folders → dotfiles → files)
+
 ## [0.2.1] - 2025-06-23
 
 ### Removed 
