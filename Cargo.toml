@@ -20,6 +20,7 @@ ignore = "0.4.22"
 lscolors = "0.9"
 url = "2.5.2"
 ratatui = "0.27.0"
+natord = "1.0"
 
 # Dependencies for testing the command-line interface
 [dev-dependencies]

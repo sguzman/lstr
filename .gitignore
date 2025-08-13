@@ -71,3 +71,6 @@ ehthumbs_vista.db
 
 # Ignore all directories with _files suffix
 *_files/
+
+# Claude Code context file - contains project-specific development notes
+CLAUDE.md

@@ -6,6 +6,7 @@
 use crate::app::InteractiveArgs;
 use crate::git::{self, StatusCache};
 use crate::icons;
+use crate::sort;
 use crate::utils;
 use ignore::WalkBuilder;
 use lscolors::{Color as LsColor, LsColors, Style as LsStyle};
@@ -339,13 +340,23 @@ fn scan_directory(
     status_info: Option<(&StatusCache, &PathBuf)>,
     args: &InteractiveArgs,
 ) -> anyhow::Result<Vec<FileEntry>> {
-    let mut entries = Vec::new();
     let mut builder = WalkBuilder::new(path);
     builder.hidden(!args.all).git_ignore(args.gitignore);
-    for result in builder.build().flatten() {
-        if result.path() == path {
-            continue;
-        }
+    
+    // Collect all DirEntry objects first, filtering out the root path
+    let mut dir_entries: Vec<_> = builder
+        .build()
+        .flatten()
+        .filter(|result| result.path() != path)
+        .collect();
+    
+    // Apply sorting to the DirEntry objects
+    let sort_options = args.to_sort_options();
+    sort::sort_entries(&mut dir_entries, &sort_options);
+    
+    // Convert DirEntry objects to FileEntry objects
+    let mut entries = Vec::new();
+    for result in dir_entries {
         let metadata = if args.size || args.permissions { result.metadata().ok() } else { None };
         let is_dir = result.file_type().is_some_and(|ft| ft.is_dir());
         let git_status = if let Some((cache, root)) = status_info {

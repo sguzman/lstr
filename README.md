@@ -77,6 +77,12 @@ Note that `PATH` defaults to the current directory (`.`) if not specified.
 | `-L`, `--level <LEVEL>`| Maximum depth to descend.                                                   |
 | `-p`, `--permissions`  | Display file permissions (Unix-like systems only).                          |
 | `-s`, `--size`         | Display the size of files.                                                  |
+| `--sort <TYPE>`        | Sort entries by the specified criteria (`name`, `size`, `modified`, `extension`). |
+| `--dirs-first`         | Sort directories before files.                                              |
+| `--case-sensitive`     | Use case-sensitive sorting.                                                 |
+| `--natural-sort`       | Use natural/version sorting (e.g., file1 < file10).                        |
+| `-r`, `--reverse`      | Reverse the sort order.                                                     |
+| `--dotfiles-first`     | Sort dotfiles and dotfolders first (dotfolders → folders → dotfiles → files). |
 | `--expand-level <LEVEL>`| **Interactive mode only:** Initial depth to expand the interactive tree.   |
 
 -----
@@ -131,6 +137,30 @@ lstr --hyperlinks
 
 ```bash
 lstr interactive -gG --icons -s -p
+```
+
+**7. Sort files naturally with directories first**
+
+```bash
+lstr --dirs-first --natural-sort
+```
+
+**8. Sort by file size in descending order**
+
+```bash
+lstr --sort size --reverse
+```
+
+**9. Sort by extension with case-sensitive ordering**
+
+```bash
+lstr --sort extension --case-sensitive
+```
+
+**10. Sort with dotfiles first and directories first**
+
+```bash
+lstr --dotfiles-first --dirs-first -a
 ```
 
 ## Piping and shell interaction

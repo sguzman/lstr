@@ -7,6 +7,7 @@
 mod app;
 mod git;
 mod icons;
+mod sort;
 mod tui;
 mod utils;
 mod view;

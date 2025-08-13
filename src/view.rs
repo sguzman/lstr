@@ -3,6 +3,7 @@
 use crate::app::ViewArgs;
 use crate::git;
 use crate::icons;
+use crate::sort;
 use crate::utils;
 use colored::{control, Colorize};
 use ignore::{self, WalkBuilder};
@@ -46,18 +47,29 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
     let mut dir_count = 0;
     let mut file_count = 0;
 
-    for result in builder.build() {
-        let entry = match result {
-            Ok(entry) => entry,
+    // Collect all entries first, then sort them
+    let mut entries: Vec<_> = builder
+        .build()
+        .filter_map(|result| match result {
+            Ok(entry) => {
+                if entry.depth() == 0 {
+                    None // Skip the root directory
+                } else {
+                    Some(entry)
+                }
+            }
             Err(err) => {
                 eprintln!("lstr: ERROR: {err}");
-                continue;
+                None
             }
-        };
+        })
+        .collect();
 
-        if entry.depth() == 0 {
-            continue;
-        }
+    // Apply sorting
+    let sort_options = args.to_sort_options();
+    sort::sort_entries(&mut entries, &sort_options);
+
+    for entry in entries {
 
         let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
         if args.dirs_only && !is_dir {

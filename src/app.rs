@@ -3,6 +3,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use std::fmt;
 use std::path::PathBuf;
+use crate::sort;
 
 /// A blazingly fast, minimalist directory tree viewer, written in Rust.
 #[derive(Parser, Debug)]
@@ -63,6 +64,24 @@ pub struct ViewArgs {
     /// Render file paths as clickable hyperlinks.
     #[arg(long)]
     pub hyperlinks: bool,
+    /// Sort entries by the specified criteria.
+    #[arg(long, default_value_t = SortType::Name)]
+    pub sort: SortType,
+    /// Sort directories before files.
+    #[arg(long)]
+    pub dirs_first: bool,
+    /// Use case-sensitive sorting.
+    #[arg(long)]
+    pub case_sensitive: bool,
+    /// Use natural/version sorting (e.g., file1 < file10).
+    #[arg(long)]
+    pub natural_sort: bool,
+    /// Reverse the sort order.
+    #[arg(short = 'r', long)]
+    pub reverse: bool,
+    /// Sort dotfiles and dotfolders first.
+    #[arg(long)]
+    pub dotfiles_first: bool,
 }
 
 /// Arguments for the `interactive` command.
@@ -92,6 +111,38 @@ pub struct InteractiveArgs {
     /// Initial depth to expand the directory tree.
     #[arg(long, value_name = "LEVEL")]
     pub expand_level: Option<usize>,
+    /// Sort entries by the specified criteria.
+    #[arg(long, default_value_t = SortType::Name)]
+    pub sort: SortType,
+    /// Sort directories before files.
+    #[arg(long)]
+    pub dirs_first: bool,
+    /// Use case-sensitive sorting.
+    #[arg(long)]
+    pub case_sensitive: bool,
+    /// Use natural/version sorting (e.g., file1 < file10).
+    #[arg(long)]
+    pub natural_sort: bool,
+    /// Reverse the sort order.
+    #[arg(short = 'r', long)]
+    pub reverse: bool,
+    /// Sort dotfiles and dotfolders first.
+    #[arg(long)]
+    pub dotfiles_first: bool,
+}
+
+/// Defines the available sorting strategies.
+#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq, Default)]
+pub enum SortType {
+    /// Sort by name (default)
+    #[default]
+    Name,
+    /// Sort by file size
+    Size,
+    /// Sort by modification time
+    Modified,
+    /// Sort by file extension
+    Extension,
 }
 
 /// Defines the choices for the --color option.
@@ -101,6 +152,52 @@ pub enum ColorChoice {
     #[default]
     Auto,
     Never,
+}
+
+impl From<SortType> for sort::SortType {
+    fn from(sort_type: SortType) -> Self {
+        match sort_type {
+            SortType::Name => sort::SortType::Name,
+            SortType::Size => sort::SortType::Size,
+            SortType::Modified => sort::SortType::Modified,
+            SortType::Extension => sort::SortType::Extension,
+        }
+    }
+}
+
+impl ViewArgs {
+    /// Creates a SortOptions instance from the ViewArgs.
+    pub fn to_sort_options(&self) -> sort::SortOptions {
+        sort::SortOptions {
+            sort_type: self.sort.into(),
+            directories_first: self.dirs_first,
+            case_sensitive: self.case_sensitive,
+            natural_sort: self.natural_sort,
+            reverse: self.reverse,
+            dotfiles_first: self.dotfiles_first,
+        }
+    }
+}
+
+impl InteractiveArgs {
+    /// Creates a SortOptions instance from the InteractiveArgs.
+    pub fn to_sort_options(&self) -> sort::SortOptions {
+        sort::SortOptions {
+            sort_type: self.sort.into(),
+            directories_first: self.dirs_first,
+            case_sensitive: self.case_sensitive,
+            natural_sort: self.natural_sort,
+            reverse: self.reverse,
+            dotfiles_first: self.dotfiles_first,
+        }
+    }
+}
+
+/// Implements the Display trait for SortType to show possible values in help messages.
+impl fmt::Display for SortType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.to_possible_value().expect("no values are skipped").get_name().fmt(f)
+    }
 }
 
 /// Implements the Display trait for ColorChoice to show possible values in help messages.
