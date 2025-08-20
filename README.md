@@ -48,7 +48,7 @@ You need the Rust toolchain installed on your system to build `lstr`.
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/bgreenwell/lstr.git](https://github.com/bgreenwell/lstr.git)
+    git clone https://github.com/bgreenwell/lstr.git
     cd lstr
     ```
 2.  **Build and install using Cargo:**
