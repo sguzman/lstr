@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `--reverse`: Reverse any sort order
   - `--dotfiles-first`: Priority ordering (dotfolders → folders → dotfiles → files)
 
+- Added comprehensive examples directory (`examples/sample-directory/`) with various file types, nested structures, and test scenarios for validating lstr functionality including icons, gitignore behavior, and tree display.
+
+### Fixed
+
+- Fixed tree display connector issue where all entries showed `└──` instead of proper tree structure with mixed `├──` and `└──` connectors based on position. ([Closes #36](https://github.com/bgreenwell/lstr/issues/36))
+
 ## [0.2.1] - 2025-06-23
 
 ### Removed 
