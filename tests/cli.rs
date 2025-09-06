@@ -357,15 +357,146 @@ fn test_dotfiles_first_sorting() -> Result<(), Box<dyn std::error::Error>> {
     let stdout = String::from_utf8(output.stdout)?;
 
     // Order should be: .dotfolder -> folder -> .hidden.txt -> regular.txt
-    // Use full line matching to avoid substring issues
-    let dotfolder_line_pos = stdout.find("└── .dotfolder").expect(".dotfolder line not found");
-    let folder_line_pos = stdout.find("└── folder").expect("folder line not found");
-    let hidden_line_pos = stdout.find("└── .hidden.txt").expect(".hidden.txt line not found");
+    // With proper tree connectors: ├── for first 3 items, └── for last item
+    let dotfolder_line_pos = stdout.find("├── .dotfolder").expect(".dotfolder line not found");
+    let folder_line_pos = stdout.find("├── folder").expect("folder line not found");
+    let hidden_line_pos = stdout.find("├── .hidden.txt").expect(".hidden.txt line not found");
     let regular_line_pos = stdout.find("└── regular.txt").expect("regular.txt line not found");
 
     assert!(dotfolder_line_pos < folder_line_pos);
     assert!(folder_line_pos < hidden_line_pos);
     assert!(hidden_line_pos < regular_line_pos);
+
+    Ok(())
+}
+
+#[test]
+fn test_tree_structure_display() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = tempdir()?;
+
+    // Create the exact structure from issue #36:
+    // .
+    // └── t1
+    //     ├── t2
+    //     │   ├── hello.md
+    //     │   └── t3
+    //     └── tmp.txt
+
+    // Create t1 directory
+    fs::create_dir(temp_dir.path().join("t1"))?;
+
+    // Create t2 subdirectory
+    fs::create_dir(temp_dir.path().join("t1/t2"))?;
+
+    // Create files and subdirectories
+    fs::write(temp_dir.path().join("t1/t2/hello.md"), "# Hello")?;
+    fs::create_dir(temp_dir.path().join("t1/t2/t3"))?;
+    fs::write(temp_dir.path().join("t1/tmp.txt"), "temporary content")?;
+
+    let mut cmd = Command::cargo_bin("lstr")?;
+    cmd.arg(temp_dir.path());
+
+    let output = cmd.output()?;
+    let stdout = String::from_utf8(output.stdout)?;
+
+    // Expected tree structure with proper connectors:
+    // t1 should use └── (last/only item in root)
+    // t2 should use ├── (not last in t1)
+    // tmp.txt should use └── (last in t1)
+    // hello.md should use ├── (not last in t2)
+    // t3 should use └── (last in t2)
+
+    // Check that we have proper tree connectors, not all └──
+    assert!(stdout.contains("└── t1"), "t1 should use └── connector");
+    assert!(stdout.contains("├── t2"), "t2 should use ├── connector (not last in parent)");
+    assert!(stdout.contains("└── tmp.txt"), "tmp.txt should use └── connector (last in parent)");
+    assert!(
+        stdout.contains("├── hello.md"),
+        "hello.md should use ├── connector (not last in parent)"
+    );
+    assert!(stdout.contains("└── t3"), "t3 should use └── connector (last in parent)");
+
+    // Verify we have vertical connectors for proper tree visualization
+    assert!(stdout.contains("│"), "Should contain vertical tree connectors");
+
+    Ok(())
+}
+
+#[test]
+fn test_tree_structure_with_dirs_first() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = tempdir()?;
+
+    // Create a structure to test --dirs-first with tree connectors
+    fs::create_dir(temp_dir.path().join("dir1"))?;
+    fs::create_dir(temp_dir.path().join("dir2"))?;
+    fs::write(temp_dir.path().join("file1.txt"), "content1")?;
+    fs::write(temp_dir.path().join("file2.txt"), "content2")?;
+
+    // Add some nested content
+    fs::write(temp_dir.path().join("dir1/nested.txt"), "nested content")?;
+
+    let mut cmd = Command::cargo_bin("lstr")?;
+    cmd.arg("--dirs-first").arg(temp_dir.path());
+
+    let output = cmd.output()?;
+    let stdout = String::from_utf8(output.stdout)?;
+
+    // With --dirs-first, directories should come first
+    // dir1 should use ├── (not last directory)
+    // dir2 should use ├── (not last directory, files come after)
+    // file1.txt should use ├── (not last file)
+    // file2.txt should use └── (last file)
+
+    assert!(stdout.contains("├── dir1"), "dir1 should use ├── connector");
+    assert!(stdout.contains("├── dir2"), "dir2 should use ├── connector");
+    assert!(stdout.contains("├── file1.txt"), "file1.txt should use ├── connector");
+    assert!(stdout.contains("└── file2.txt"), "file2.txt should use └── connector (last)");
+
+    Ok(())
+}
+
+#[test]
+fn test_single_file_tree() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = tempdir()?;
+
+    // Single file should use └──
+    fs::write(temp_dir.path().join("single.txt"), "content")?;
+
+    let mut cmd = Command::cargo_bin("lstr")?;
+    cmd.arg(temp_dir.path());
+
+    let output = cmd.output()?;
+    let stdout = String::from_utf8(output.stdout)?;
+
+    assert!(stdout.contains("└── single.txt"), "single file should use └── connector");
+
+    Ok(())
+}
+
+#[test]
+fn test_deep_nested_tree() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = tempdir()?;
+
+    // Create a deeper nesting structure: a/b/c/d/file.txt
+    fs::create_dir(temp_dir.path().join("a"))?;
+    fs::create_dir(temp_dir.path().join("a/b"))?;
+    fs::create_dir(temp_dir.path().join("a/b/c"))?;
+    fs::create_dir(temp_dir.path().join("a/b/c/d"))?;
+    fs::write(temp_dir.path().join("a/b/c/d/deep.txt"), "deep content")?;
+
+    // Add sibling to 'a' to test vertical connectors
+    fs::create_dir(temp_dir.path().join("sibling"))?;
+
+    let mut cmd = Command::cargo_bin("lstr")?;
+    cmd.arg(temp_dir.path());
+
+    let output = cmd.output()?;
+    let stdout = String::from_utf8(output.stdout)?;
+
+    // Should have proper vertical connectors for deep nesting
+    assert!(stdout.contains("├── a"), "a should use ├── (has sibling)");
+    assert!(stdout.contains("└── sibling"), "sibling should use └── (last)");
+    assert!(stdout.contains("│"), "Should contain vertical connectors for deep nesting");
 
     Ok(())
 }

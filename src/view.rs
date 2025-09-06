@@ -69,7 +69,10 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
     let sort_options = args.to_sort_options();
     sort::sort_entries(&mut entries, &sort_options);
 
-    for entry in entries {
+    // Build tree structure information
+    let tree_info = build_tree_info(&entries);
+
+    for (index, entry) in entries.iter().enumerate() {
         let is_dir = entry.file_type().is_some_and(|ft| ft.is_dir());
         if args.dirs_only && !is_dir {
             continue;
@@ -131,7 +134,8 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
             String::new()
         };
 
-        let indent = "    ".repeat(entry.depth().saturating_sub(1));
+        let default_tree_info = (String::new(), "└──".to_string());
+        let (prefix, connector) = tree_info.get(&index).unwrap_or(&default_tree_info);
         let name = entry.file_name().to_string_lossy();
         let icon_str = if args.icons {
             let (icon, color) = icons::get_icon_for_path(entry.path(), is_dir);
@@ -210,12 +214,12 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
 
         if writeln!(
             io::stdout(),
-            "{}{}{}└── {}{}{}",
+            "{}{}{}{} {}{}{}",
             git_status_str,
             permissions_str.dimmed(),
-            indent,
+            prefix,
+            connector,
             icon_str,
-            //styled_name,
             final_name,
             size_str.dimmed()
         )
@@ -229,4 +233,61 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
     _ = writeln!(io::stdout(), "{summary}");
 
     Ok(())
+}
+
+/// Builds tree structure information for proper connector display
+/// Returns a map from entry index to (prefix, connector) tuple  
+fn build_tree_info(
+    entries: &[ignore::DirEntry],
+) -> std::collections::HashMap<usize, (String, String)> {
+    use std::collections::HashMap;
+
+    let mut tree_info = HashMap::new();
+
+    for (index, entry) in entries.iter().enumerate() {
+        let depth = entry.depth();
+        let mut prefix = String::new();
+
+        // Build prefix by walking up the tree and checking each ancestor
+        let current_path = entry.path();
+
+        // For each depth level from 1 to current depth - 1
+        for level in 1..depth {
+            // Find the ancestor directory at this level
+            let ancestor_path = {
+                let mut path = current_path;
+                for _ in level..depth {
+                    if let Some(parent) = path.parent() {
+                        path = parent;
+                    }
+                }
+                path
+            };
+
+            // Check if this ancestor has more siblings coming after it
+            let has_more_siblings = entries.iter().enumerate().any(|(later_index, later_entry)| {
+                later_index > index && // Must come after current entry
+                    later_entry.depth() == level && // Same depth as ancestor
+                    later_entry.path().parent() == ancestor_path.parent() // Same parent as ancestor
+            });
+
+            if has_more_siblings {
+                prefix.push_str("│   ");
+            } else {
+                prefix.push_str("    ");
+            }
+        }
+
+        // Determine connector for this entry (├── vs └──)
+        let is_last_sibling = !entries.iter().enumerate().any(|(later_index, later_entry)| {
+            later_index > index && // Must come after current entry
+                later_entry.depth() == depth && // Same depth
+                later_entry.path().parent() == entry.path().parent() // Same parent
+        });
+
+        let connector = if is_last_sibling { "└──" } else { "├──" };
+        tree_info.insert(index, (prefix, connector.to_string()));
+    }
+
+    tree_info
 }
