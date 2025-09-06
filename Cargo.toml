@@ -28,6 +28,10 @@ assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.10"
 
+[workspace]
+# Exclude the examples directory from being treated as a workspace member
+exclude = ["examples/sample-directory"]
+
 [profile.release]
 strip = true
 lto = true
