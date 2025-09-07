@@ -23,7 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed tree display connector issue where all entries showed `└──` instead of proper tree structure with mixed `├──` and `└──` connectors based on position. ([Closes #36](https://github.com/bgreenwell/lstr/issues/36))
+- **CRITICAL**: Fixed fundamental tree structure corruption caused by flat sorting destroying parent-child relationships. Implemented tree-aware hierarchical sorting that preserves proper tree traversal order while sorting siblings within their respective parent directories. This resolves multiple cascading issues:
+  - Fixed tree display connector issue where all entries showed `└──` instead of proper mixed `├──` and `└──` connectors ([Closes #36](https://github.com/bgreenwell/lstr/issues/36))
+  - Fixed incorrect file nesting where children appeared under wrong parents or in jumbled order
+  - Fixed duplicate/phantom entries in interactive TUI mode caused by corrupted tree structure
+  - Fixed missing entries when tree structure calculations failed
+  - Ensured consistent output between classic and TUI modes
+  
+- Added shared `sort_entries_hierarchically()` function to sort module for tree-aware sorting used by both classic and interactive modes
 
 ## [0.2.1] - 2025-06-23
 

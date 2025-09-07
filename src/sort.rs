@@ -78,8 +78,73 @@ pub fn sort_entries(entries: &mut [DirEntry], options: &SortOptions) {
     });
 }
 
+/// Sorts directory entries hierarchically, preserving tree structure.
+/// 
+/// This builds an explicit tree structure and then reconstructs the entries
+/// in depth-first order with proper sibling sorting within each parent directory.
+/// Use this instead of sort_entries() when you need to preserve parent-child relationships.
+pub fn sort_entries_hierarchically(entries: &mut Vec<DirEntry>, options: &SortOptions) {
+    use std::collections::HashMap;
+    
+    if entries.is_empty() {
+        return;
+    }
+    
+    // Build parent-child mapping
+    let mut children_map: HashMap<std::path::PathBuf, Vec<DirEntry>> = HashMap::new();
+    let mut all_entries_by_path: HashMap<std::path::PathBuf, DirEntry> = HashMap::new();
+    
+    // Collect all entries and build parent-child relationships
+    for entry in entries.iter() {
+        all_entries_by_path.insert(entry.path().to_path_buf(), entry.clone());
+        
+        if let Some(parent_path) = entry.path().parent() {
+            children_map.entry(parent_path.to_path_buf()).or_default().push(entry.clone());
+        }
+    }
+    
+    // Sort children within each parent directory
+    for children in children_map.values_mut() {
+        sort_entries(children, options);
+    }
+    
+    // Find root entries (depth 1, since we skip depth 0)
+    let mut root_entries: Vec<_> = entries.iter()
+        .filter(|e| e.depth() == 1)
+        .cloned()
+        .collect();
+    
+    // Sort root entries
+    sort_entries(&mut root_entries, options);
+    
+    // Recursively collect entries in depth-first order
+    fn collect_tree_entries(
+        entry: &DirEntry,
+        children_map: &HashMap<std::path::PathBuf, Vec<DirEntry>>,
+        result: &mut Vec<DirEntry>
+    ) {
+        // Add the parent entry
+        result.push(entry.clone());
+        
+        // Add all its children in sorted order
+        if let Some(children) = children_map.get(entry.path()) {
+            for child in children {
+                collect_tree_entries(child, children_map, result);
+            }
+        }
+    }
+    
+    // Rebuild entries in proper tree order
+    let mut result = Vec::new();
+    for root in &root_entries {
+        collect_tree_entries(root, &children_map, &mut result);
+    }
+    
+    *entries = result;
+}
+
 /// Compares two directory entries according to the sorting options.
-fn compare_entries(a: &DirEntry, b: &DirEntry, options: &SortOptions) -> Ordering {
+pub fn compare_entries(a: &DirEntry, b: &DirEntry, options: &SortOptions) -> Ordering {
     let a_is_dir = a.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
     let b_is_dir = b.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
     let a_is_dotfile = is_dotfile(a);

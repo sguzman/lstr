@@ -347,9 +347,9 @@ fn scan_directory(
     let mut dir_entries: Vec<_> =
         builder.build().flatten().filter(|result| result.path() != path).collect();
 
-    // Apply sorting to the DirEntry objects
+    // Apply tree-aware sorting to preserve parent-child relationships
     let sort_options = args.to_sort_options();
-    sort::sort_entries(&mut dir_entries, &sort_options);
+    sort::sort_entries_hierarchically(&mut dir_entries, &sort_options);
 
     // Convert DirEntry objects to FileEntry objects
     let mut entries = Vec::new();

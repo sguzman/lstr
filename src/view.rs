@@ -65,9 +65,9 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
         })
         .collect();
 
-    // Apply sorting
+    // Apply tree-aware sorting (preserves parent-child relationships)
     let sort_options = args.to_sort_options();
-    sort::sort_entries(&mut entries, &sort_options);
+    sort::sort_entries_hierarchically(&mut entries, &sort_options);
 
     // Build tree structure information
     let tree_info = build_tree_info(&entries);
@@ -234,6 +234,7 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
 
     Ok(())
 }
+
 
 /// Builds tree structure information for proper connector display
 /// Returns a map from entry index to (prefix, connector) tuple  
