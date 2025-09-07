@@ -19,9 +19,10 @@ use ratatui::crossterm::{
 };
 use ratatui::{
     backend::{Backend, CrosstermBackend},
+    layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{List, ListItem, ListState},
+    widgets::{List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
 use std::env;
@@ -91,10 +92,25 @@ struct FileEntry {
     git_status: Option<git::FileStatus>,
 }
 
+/// Represents the current search mode of the TUI
+#[derive(Debug, Clone, PartialEq)]
+enum SearchMode {
+    /// No search active, showing all entries
+    None,
+    /// Search mode activated with '/' key
+    Search,
+}
+
 struct AppState {
     master_entries: Vec<FileEntry>,
     visible_entries: Vec<FileEntry>,
     list_state: ListState,
+    /// Current search/filter mode
+    search_mode: SearchMode,
+    /// Current search query string
+    search_query: String,
+    /// Backup of visible entries before search/filter was applied
+    original_visible_entries: Vec<FileEntry>,
 }
 
 impl AppState {
@@ -112,8 +128,14 @@ impl AppState {
             }
         }
 
-        let mut app_state =
-            Self { master_entries, visible_entries: Vec::new(), list_state: ListState::default() };
+        let mut app_state = Self {
+            master_entries,
+            visible_entries: Vec::new(),
+            list_state: ListState::default(),
+            search_mode: SearchMode::None,
+            search_query: String::new(),
+            original_visible_entries: Vec::new(),
+        };
         app_state.regenerate_visible_entries();
         if !app_state.visible_entries.is_empty() {
             app_state.list_state.select(Some(0));
@@ -190,6 +212,93 @@ impl AppState {
             }
         }
     }
+
+    /// Enter search mode (activated by '/' key)
+    fn enter_search_mode(&mut self) {
+        if self.search_mode == SearchMode::None {
+            self.original_visible_entries = self.visible_entries.clone();
+        }
+        self.search_mode = SearchMode::Search;
+        self.search_query.clear();
+    }
+
+
+    /// Exit search/filter mode and restore original view
+    fn exit_search_mode(&mut self) {
+        if self.search_mode != SearchMode::None {
+            self.visible_entries = self.original_visible_entries.clone();
+            self.original_visible_entries.clear();
+            self.search_mode = SearchMode::None;
+            self.search_query.clear();
+            
+            // Restore selection to valid index
+            if let Some(selected) = self.list_state.selected() {
+                if selected >= self.visible_entries.len() {
+                    let new_selection = if self.visible_entries.is_empty() {
+                        None
+                    } else {
+                        Some(self.visible_entries.len() - 1)
+                    };
+                    self.list_state.select(new_selection);
+                }
+            }
+        }
+    }
+
+    /// Check if currently in any search/filter mode
+    fn in_search_mode(&self) -> bool {
+        self.search_mode != SearchMode::None
+    }
+
+    /// Append character to search query and apply filter
+    fn append_to_query(&mut self, c: char) {
+        if self.search_mode != SearchMode::None {
+            self.search_query.push(c);
+            self.apply_search_filter();
+        }
+    }
+
+    /// Remove last character from search query and apply filter
+    fn remove_from_query(&mut self) {
+        if self.search_mode != SearchMode::None && !self.search_query.is_empty() {
+            self.search_query.pop();
+            self.apply_search_filter();
+        }
+    }
+
+    /// Apply current search query to filter visible entries
+    fn apply_search_filter(&mut self) {
+        if self.search_mode == SearchMode::None || self.search_query.is_empty() {
+            // If no search or empty query, show original entries
+            self.visible_entries = self.original_visible_entries.clone();
+        } else {
+            // Filter entries based on search query (case-insensitive filename match)
+            let query_lower = self.search_query.to_lowercase();
+            self.visible_entries = self.original_visible_entries
+                .iter()
+                .filter(|entry| {
+                    entry.path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .map(|name| name.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .collect();
+        }
+        
+        // Reset selection to first item if current selection is out of bounds
+        if let Some(selected) = self.list_state.selected() {
+            if selected >= self.visible_entries.len() {
+                let new_selection = if self.visible_entries.is_empty() {
+                    None
+                } else {
+                    Some(0)
+                };
+                self.list_state.select(new_selection);
+            }
+        }
+    }
 }
 
 pub fn run(args: &InteractiveArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
@@ -240,8 +349,24 @@ fn run_app<B: Backend + Write>(
                             break Ok(PostExitAction::PrintPath(entry.path.clone()));
                         }
                     }
-                    KeyCode::Char('q') | KeyCode::Esc => {
+                    KeyCode::Char('q') => {
                         break Ok(PostExitAction::None);
+                    }
+                    KeyCode::Esc => {
+                        if app_state.in_search_mode() {
+                            app_state.exit_search_mode();
+                        } else {
+                            break Ok(PostExitAction::None);
+                        }
+                    }
+                    KeyCode::Char('/') if !app_state.in_search_mode() => {
+                        app_state.enter_search_mode();
+                    }
+                    KeyCode::Backspace if app_state.in_search_mode() => {
+                        app_state.remove_from_query();
+                    }
+                    KeyCode::Char(c) if app_state.in_search_mode() && (c.is_alphanumeric() || c == '.' || c == '_' || c == '-' || c == ' ') => {
+                        app_state.append_to_query(c);
                     }
                     KeyCode::Down | KeyCode::Char('j') => app_state.next(),
                     KeyCode::Up | KeyCode::Char('k') => app_state.previous(),
@@ -329,10 +454,37 @@ fn ui(f: &mut Frame, app_state: &mut AppState, args: &InteractiveArgs, ls_colors
             ListItem::new(Line::from(spans))
         })
         .collect();
+    // Create layout: main area for list + bottom line for status
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(0),     // Main area (flexible)
+            Constraint::Length(1),  // Status line (1 row)
+        ])
+        .split(f.size());
+
+    // Render the file list in the main area
     let list = List::new(items)
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
         .highlight_symbol("> ");
-    f.render_stateful_widget(list, f.size(), &mut app_state.list_state);
+    f.render_stateful_widget(list, chunks[0], &mut app_state.list_state);
+
+    // Create and render status line
+    let status_text = if app_state.in_search_mode() {
+        let match_count = app_state.visible_entries.len();
+        format!("Search: {} ({} matches)", app_state.search_query, match_count)
+    } else {
+        // Show help text when not searching
+        "Press / to search, q to quit".to_string()
+    };
+
+    let status_paragraph = Paragraph::new(status_text)
+        .style(if app_state.in_search_mode() { 
+            Style::default().fg(Color::Yellow) 
+        } else { 
+            Style::default().fg(Color::Gray) 
+        });
+    f.render_widget(status_paragraph, chunks[1]);
 }
 
 fn scan_directory(
@@ -469,6 +621,9 @@ mod tests {
             master_entries,
             visible_entries: Vec::new(),
             list_state: ListState::default(),
+            search_mode: SearchMode::None,
+            search_query: String::new(),
+            original_visible_entries: Vec::new(),
         };
         app_state.regenerate_visible_entries();
         app_state.list_state.select(Some(0));
