@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 - Added shared `sort_entries_hierarchically()` function to sort module for tree-aware sorting used by both classic and interactive modes
 
+- Fixed alignment issues with permissions (`-p`) and git status (`-G`) flags where root directory formatting was inconsistent with tree entries. Root directory now properly displays permissions and git status spacing for consistent output alignment. ([Closes #32](https://github.com/bgreenwell/lstr/issues/32))
+
 ## [0.2.1] - 2025-06-23
 
 ### Removed 

@@ -30,7 +30,47 @@ pub fn run(args: &ViewArgs, ls_colors: &LsColors) -> anyhow::Result<()> {
         crate::app::ColorChoice::Auto => {}
     }
 
-    if writeln!(io::stdout(), "{}", args.path.display().to_string().blue().bold()).is_err() {
+    // Format root directory with same alignment as tree entries
+    let root_metadata = if args.size || args.permissions { 
+        fs::metadata(&args.path).ok() 
+    } else { 
+        None 
+    };
+    
+    let root_permissions_str = if args.permissions {
+        let perms = if let Some(md) = &root_metadata {
+            #[cfg(unix)]
+            {
+                let mode = md.permissions().mode();
+                let file_type_char = if md.is_dir() { 'd' } else { '-' };
+                format!("{}{}", file_type_char, utils::format_permissions(mode))
+            }
+            #[cfg(not(unix))]
+            {
+                let _ = md;
+                "----------".to_string()
+            }
+        } else {
+            "----------".to_string()
+        };
+        format!("{perms} ")
+    } else {
+        String::new()
+    };
+    
+    let root_git_status_str = if args.git_status {
+        "  ".to_string() // Empty git status column for consistent spacing
+    } else {
+        String::new()
+    };
+    
+    if writeln!(
+        io::stdout(), 
+        "{}{}{}",
+        root_git_status_str,
+        root_permissions_str, 
+        args.path.display().to_string().blue().bold()
+    ).is_err() {
         return Ok(());
     }
 
