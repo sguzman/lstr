@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added comprehensive examples directory (`examples/sample-directory/`) with various file types, nested structures, and test scenarios for validating lstr functionality including icons, gitignore behavior, and tree display.
 
+- Added interactive search functionality in TUI mode:
+  - Press `/` to enter search mode with real-time filename filtering
+  - Case-insensitive substring matching filters files as you type
+  - Press `Esc` to exit search and restore full file list
+  - Status line shows current search query and match count
+  - Preserves tree structure and selection state during filtering ([Closes #30](https://github.com/bgreenwell/lstr/issues/30))
+
 ### Fixed
 
 - **CRITICAL**: Fixed fundamental tree structure corruption caused by flat sorting destroying parent-child relationships. Implemented tree-aware hierarchical sorting that preserves proper tree traversal order while sorting siblings within their respective parent directories. This resolves multiple cascading issues:
