@@ -1,4 +1,6 @@
 {
+  description = "A fast, minimalist directory tree viewer, written in Rust.";
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.05";
     flake-utils.url = "github:numtide/flake-utils";
